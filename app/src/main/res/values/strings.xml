@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Fcitx5 for Android Updater</string>
+    <string name="download">Download</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="install">Install</string>
+    <string name="delete_apk">Delete APK</string>
+    <string name="remote">Remote</string>
+    <string name="local">Local</string>
+    <string name="installed">Installed</string>
+</resources>
