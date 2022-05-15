@@ -8,4 +8,7 @@
     <string name="remote">Remote</string>
     <string name="local">Local</string>
     <string name="installed">Installed</string>
+    <string name="cancel">Cancel</string>
+    <string name="resume">Resume</string>
+    <string name="pause">Pause</string>
 </resources>

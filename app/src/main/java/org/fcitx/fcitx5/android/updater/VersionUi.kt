@@ -37,6 +37,6 @@ sealed interface VersionUi : Parcelable {
     ) : VersionUi
 
     companion object {
-        val NotInstalled = Installed("NA", .0, false)
+        val NotInstalled = Installed("N/A", .0, false)
     }
 }

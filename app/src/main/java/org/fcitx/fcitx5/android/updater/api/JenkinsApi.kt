@@ -5,19 +5,18 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.fcitx.fcitx5.android.updater.await
+import org.fcitx.fcitx5.android.updater.httpClient
 import org.fcitx.fcitx5.android.updater.parallelMap
 import org.json.JSONObject
 
 object JenkinsApi {
-
-    private val client = OkHttpClient()
 
     private suspend fun getJobBuildNumbers(job: String): Result<List<Int>> =
         withContext(Dispatchers.IO) {
             val request = Request.Builder()
                 .url("https://jenkins.fcitx-im.org/job/android/job/$job/api/json")
                 .build()
-            val response = client.newCall(request).await()
+            val response = httpClient.newCall(request).await()
             runCatching {
                 val jObject = JSONObject(response.body!!.string())
                 val jArray = jObject.getJSONArray("builds")
@@ -34,7 +33,7 @@ object JenkinsApi {
             val request = Request.Builder()
                 .url("https://jenkins.fcitx-im.org/job/android/job/$job/$buildNumber/api/json")
                 .build()
-            val response = client.newCall(request).await()
+            val response = httpClient.newCall(request).await()
             runCatching {
                 val jObject = JSONObject(response.body!!.string())
                 val actions = jObject.getJSONArray("actions")
@@ -73,12 +72,4 @@ object JenkinsApi {
             .getOrDefault(listOf())
             .parallelMap { getWorkflowRun(job, it) }
 
-    suspend fun getArtifactSize(artifact: Artifact) = withContext(Dispatchers.IO) {
-        val request = Request.Builder()
-            .url(artifact.url)
-            .head()
-            .build()
-        val response = client.newCall(request).await()
-        response.header("Content-Length")?.toIntOrNull()?.let { it / 1E6 }
-    }
 }

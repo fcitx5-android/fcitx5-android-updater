@@ -9,12 +9,6 @@ import java.io.File
 
 object PackageUtils {
 
-    val deviceABI: String
-        get() = Build.SUPPORTED_ABIS[0]
-
-    fun getCommitNumberFromVersionName(versionName: String) =
-        versionName.takeLastWhile { it != '-' }
-
     fun getVersionName(context: Context, apkFilePath: String) =
         context.packageManager.getPackageArchiveInfo(apkFilePath, 0)?.versionName
 

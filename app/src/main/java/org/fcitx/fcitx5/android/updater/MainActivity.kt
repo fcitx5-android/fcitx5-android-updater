@@ -2,7 +2,9 @@ package org.fcitx.fcitx5.android.updater
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,14 +50,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    Fcitx5ForAndroidUpdaterTheme {
-        Screen()
-    }
-}
-
 @Composable
 fun Screen() {
     Scaffold(topBar = {
@@ -82,7 +75,10 @@ fun VersionList(paddingValues: PaddingValues = PaddingValues(0.dp)) {
         SwipeRefresh(state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
             onRefresh = { viewModel.refresh() }) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Versions(stringResource(id = R.string.installed), viewModel.installedVersion)
+                Versions(
+                    stringResource(id = R.string.installed),
+                    listOf(viewModel.installedVersion)
+                )
                 Versions(stringResource(id = R.string.remote), viewModel.remoteVersion)
                 Versions(stringResource(id = R.string.local), viewModel.localVersion)
             }
@@ -99,10 +95,7 @@ fun Versions(name: String, versions: List<VersionUi>) {
                 text = name,
                 style = MaterialTheme.typography.h4
             )
-            Column(
-                modifier = Modifier
-                    .padding(12.dp)
-            ) {
+            Column {
                 for (v in versions)
                     VersionCard(version = v)
             }
@@ -143,7 +136,7 @@ fun VersionCard(version: VersionUi) {
                         text = "${format("%.2f", version.size)} MB",
                         style = MaterialTheme.typography.caption
                     )
-                    Divider(modifier = Modifier.padding(top = 5.dp))
+                    Divider(modifier = Modifier.padding(top = 10.dp))
                     Row(
                         modifier = Modifier.padding(horizontal = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -168,26 +161,107 @@ fun VersionCard(version: VersionUi) {
 
 @Composable
 fun RowScope.InstalledCardBottomRow(viewModel: MyViewModel, installed: VersionUi.Installed) {
-    if (installed.isInstalled)
+    if (installed.isInstalled) {
+        val launcher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+            onResult = { viewModel.onUninstall() })
         Button(
             modifier = Modifier.weight(1f),
             elevation = null,
             colors = ButtonDefaults.textButtonColors(),
-            onClick = { viewModel.uninstall(installed) }) {
+            onClick = { viewModel.uninstall(launcher) }) {
             Text(text = stringResource(id = R.string.uninstall), color = Color.Red)
         }
+    }
 }
 
 
 @Composable
 fun RowScope.RemoteCardBottomRow(viewModel: MyViewModel, remote: VersionUi.Remote) {
-    Button(
-        enabled = !remote.isDownloaded,
-        modifier = Modifier.weight(1f),
-        elevation = null,
-        colors = ButtonDefaults.textButtonColors(),
-        onClick = { viewModel.download(remote) }) {
-        Text(text = stringResource(id = if (remote.isDownloaded) R.string.downloaded else R.string.download))
+    val uiState by viewModel.getRemoteUiState(remote).collectAsState()
+
+    @Composable
+    fun CancelButton() {
+        Button(
+            enabled = true,
+            modifier = Modifier.weight(1f),
+            elevation = null,
+            colors = ButtonDefaults.textButtonColors(),
+            onClick = { viewModel.cancelDownload(remote) }) {
+            Text(text = stringResource(id = R.string.cancel))
+        }
+    }
+
+    @Composable
+    fun ResumeButton() {
+        Button(
+            enabled = true,
+            modifier = Modifier.weight(1f),
+            elevation = null,
+            colors = ButtonDefaults.textButtonColors(),
+            onClick = { viewModel.resumeDownload(remote) }) {
+            Text(text = stringResource(id = R.string.resume))
+        }
+    }
+
+    @Composable
+    fun PauseButton() {
+        Button(
+            enabled = true,
+            modifier = Modifier.weight(1f),
+            elevation = null,
+            colors = ButtonDefaults.textButtonColors(),
+            onClick = { viewModel.pauseDownload(remote) }) {
+            Text(text = stringResource(id = R.string.pause))
+        }
+    }
+
+    @Composable
+    fun DownloadButton() {
+        Button(
+            enabled = true,
+            modifier = Modifier.weight(1f),
+            elevation = null,
+            colors = ButtonDefaults.textButtonColors(),
+            onClick = { viewModel.download(remote) }) {
+            Text(text = stringResource(id = R.string.downloaded))
+        }
+    }
+
+    @Composable
+    fun ProgressBar(progress: Float? = null) {
+        if (progress == null)
+            LinearProgressIndicator(modifier = Modifier.weight(1f))
+        else
+            LinearProgressIndicator(
+                modifier = Modifier.weight(1f),
+                progress = progress
+            )
+    }
+    when (uiState) {
+        RemoteUiState.Downloaded -> {
+            Text(
+                text = stringResource(id = R.string.downloaded),
+                modifier = Modifier.weight(1f),
+                color = ButtonDefaults.textButtonColors().contentColor(enabled = false).value
+            )
+        }
+        is RemoteUiState.Downloading -> {
+            CancelButton()
+            ProgressBar((uiState as RemoteUiState.Downloading).progress)
+            PauseButton()
+        }
+        RemoteUiState.Idle -> {
+            DownloadButton()
+        }
+        is RemoteUiState.Pausing -> {
+            CancelButton()
+            ResumeButton()
+            ProgressBar((uiState as RemoteUiState.Pausing).progress)
+        }
+        RemoteUiState.Pending -> {
+            ProgressBar()
+        }
     }
 }
 
