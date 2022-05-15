@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.fcitx.fcitx5.android.updater.api.CommonApi
@@ -52,7 +53,7 @@ class MyViewModel : ViewModel() {
         val task = DownloadTask(remote.downloadUrl, File(externalDir, remote.versionName + ".tmp"))
         var progress = .0f
         task.eventFlow.onEach {
-            Log.d("G",it.toString())
+            Log.d("G", it.toString())
             when (it) {
                 DownloadEvent.Created -> {
                     flow.emit(RemoteUiState.Pending)
@@ -77,7 +78,11 @@ class MyViewModel : ViewModel() {
                     flow.emit(RemoteUiState.Pending)
                 }
             }
-        }.launchIn(viewModelScope)
+        }.let {
+            viewModelScope.launch(Dispatchers.Default) {
+                it.collect()
+            }
+        }
         task.start()
         remoteDownloadTasks[remote] = task
     }
