@@ -23,7 +23,7 @@ import java.io.File
 class MyViewModel : ViewModel() {
     private val _isRefreshing = MutableStateFlow(false)
 
-    private val remoteUiStates: MutableMap<VersionUi.Remote, MutableStateFlow<RemoteUiState>> =
+    private val remoteVersionUiStates: MutableMap<VersionUi.Remote, MutableStateFlow<RemoteVersionUiState>> =
         mutableMapOf()
 
     private val remoteDownloadTasks: MutableMap<VersionUi.Remote, DownloadTask?> =
@@ -34,12 +34,21 @@ class MyViewModel : ViewModel() {
 
     var installedVersion by mutableStateOf(VersionUi.NotInstalled)
 
-    var remoteVersion by mutableStateOf(listOf<VersionUi.Remote>())
+    var remoteVersions = mutableStateListOf<VersionUi.Remote>()
+    val localVersions = mutableStateListOf<VersionUi.Local>()
 
-    val localVersion: MutableList<VersionUi.Local>
+    private val VersionUi.isNowInstalled
+        get() = installedVersion.versionName == versionName
 
     fun getRemoteUiState(remote: VersionUi.Remote) =
-        remoteUiStates.getValue(remote).asStateFlow()
+        remoteVersionUiStates.getOrPut(remote) {
+            MutableStateFlow(
+                if (remote.isDownloaded)
+                    RemoteVersionUiState.Downloaded
+                else
+                    RemoteVersionUiState.Idle(true)
+            )
+        }.asStateFlow()
 
     fun uninstall(
         launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
@@ -49,33 +58,53 @@ class MyViewModel : ViewModel() {
 
     fun download(remote: VersionUi.Remote) {
         Log.d("m", "download")
-        val flow = remoteUiStates.getValue(remote)
-        val task = DownloadTask(remote.downloadUrl, File(externalDir, remote.versionName + ".tmp"))
+        val flow = remoteVersionUiStates.getValue(remote)
+        val task = DownloadTask(remote.downloadUrl, File(externalDir, remote.versionName + ".apk"))
         var progress = .0f
         task.eventFlow.onEach {
-            Log.d("G", it.toString())
+            Log.e("g", it.toString())
             when (it) {
+                DownloadEvent.StartCreating -> {
+                    flow.emit(RemoteVersionUiState.Idle(false))
+                }
                 DownloadEvent.Created -> {
-                    flow.emit(RemoteUiState.Pending)
+                    flow.emit(RemoteVersionUiState.Pending)
                 }
-                DownloadEvent.Downloaded -> {
-                    flow.emit(RemoteUiState.Downloaded)
+                DownloadEvent.StartPausing -> {
+                    flow.emit(RemoteVersionUiState.Downloading(false, progress))
                 }
-                is DownloadEvent.Failed -> {
-                    flow.emit(RemoteUiState.Idle)
-                }
-                DownloadEvent.Paused -> {
-                    flow.emit(RemoteUiState.Pausing(progress))
-                }
-                is DownloadEvent.Progressed -> {
-                    progress = it.progress.toFloat()
-                    flow.emit(RemoteUiState.Downloading(progress))
-                }
-                DownloadEvent.Purged -> {
-                    flow.emit(RemoteUiState.Idle)
+                DownloadEvent.StartResuming -> {
+                    flow.emit(RemoteVersionUiState.Pausing(false, progress))
                 }
                 DownloadEvent.Resumed -> {
-                    flow.emit(RemoteUiState.Pending)
+                    flow.emit(RemoteVersionUiState.Pending)
+                }
+                DownloadEvent.Downloaded -> {
+                    flow.emit(RemoteVersionUiState.Downloaded)
+                    localVersions.add(
+                        VersionUi.Local(
+                            remote.versionName,
+                            remote.size,
+                            remote.isNowInstalled,
+                            task.file
+                        )
+                    )
+                }
+                is DownloadEvent.Failed -> {
+                    flow.emit(RemoteVersionUiState.Idle(true))
+                }
+                DownloadEvent.Paused -> {
+                    flow.emit(RemoteVersionUiState.Pausing(true, progress))
+                }
+                DownloadEvent.Purged -> {
+                    flow.emit(RemoteVersionUiState.Idle(true))
+                }
+                is DownloadEvent.Downloading -> {
+                    progress = it.progress.toFloat()
+                    flow.emit(RemoteVersionUiState.Downloading(true, progress))
+                }
+                DownloadEvent.StartPurging -> {
+                    flow.emit(RemoteVersionUiState.Downloading(false, progress))
                 }
             }
         }.let {
@@ -88,31 +117,36 @@ class MyViewModel : ViewModel() {
     }
 
     fun pauseDownload(remote: VersionUi.Remote) {
-        Log.d("m", "pause")
         remoteDownloadTasks[remote]?.pause()
     }
 
 
     fun resumeDownload(remote: VersionUi.Remote) {
-        Log.d("m", "resume")
         remoteDownloadTasks[remote]?.resume()
     }
 
     fun cancelDownload(remote: VersionUi.Remote) {
-        Log.d("m", "cancel")
         remoteDownloadTasks[remote]?.purge()
     }
 
     fun delete(local: VersionUi.Local) {
-        Log.d("m", "delete")
+        local.archiveFile.delete()
+        localVersions.remove(local)
+        remoteVersions.find { it.versionName == local.versionName }?.let {
+            viewModelScope.launch {
+                remoteVersionUiStates.getValue(it).emit(RemoteVersionUiState.Idle(true))
+            }
+        }
     }
 
-    fun install(local: VersionUi.Local) {
-        Log.d("m", "install")
+    fun install(
+        launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
+        local: VersionUi.Local
+    ) {
+        launcher.launch(PackageUtils.installIntent(local.archiveFile.path))
     }
 
     init {
-        localVersion = mutableStateListOf()
         refresh()
     }
 
@@ -126,7 +160,8 @@ class MyViewModel : ViewModel() {
 
             } ?: VersionUi.NotInstalled
 
-    fun onUninstall() {
+
+    fun refreshIfInstalledChanged() {
         if (getInstalled(MyApplication.context) == VersionUi.NotInstalled)
             refresh()
     }
@@ -136,9 +171,25 @@ class MyViewModel : ViewModel() {
             return
         viewModelScope.launch {
             _isRefreshing.emit(true)
-            remoteUiStates.clear()
             installedVersion = getInstalled(MyApplication.context)
-            remoteVersion = JenkinsApi.getAllWorkflowRuns(Const.fcitx5AndroidJenkinsJobName)
+            localVersions.clear()
+            externalDir
+                .listFiles { file: File -> file.extension == "apk" }
+                ?.mapNotNull {
+                    PackageUtils.getVersionName(MyApplication.context, it.absolutePath)
+                        ?.let { versionName ->
+                            VersionUi.Local(
+                                versionName,
+                                // Bytes to MB
+                                it.length() / 1E6,
+                                installedVersion.versionName == versionName,
+                                it
+                            )
+                        }
+                }
+                ?.let { localVersions.addAll(it) }
+            remoteVersions.clear()
+            remoteVersions.addAll(JenkinsApi.getAllWorkflowRuns(Const.fcitx5AndroidJenkinsJobName)
                 .mapNotNull {
                     it.getOrNull()?.artifacts?.selectByABI()?.let { artifact ->
                         artifact.extractVersionName()?.let { versionName ->
@@ -152,19 +203,13 @@ class MyViewModel : ViewModel() {
                         // Bytes to MB
                         CommonApi.getContentLength(artifact.url)?.let { it / 1E6 } ?: .0,
                         versionName == installedVersion.versionName,
-                        false,
+                        versionName in localVersions.map { it.versionName },
                         artifact.url
                     )
                 }
-            remoteUiStates.putAll(remoteVersion.associateWith {
-                MutableStateFlow(
-                    if (it.isDownloaded)
-                        RemoteUiState.Downloaded
-                    else
-                        RemoteUiState.Idle
-                )
-            })
+            )
             _isRefreshing.emit(false)
         }
     }
+
 }

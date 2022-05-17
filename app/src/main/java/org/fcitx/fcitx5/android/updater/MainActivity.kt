@@ -79,8 +79,8 @@ fun VersionList(paddingValues: PaddingValues = PaddingValues(0.dp)) {
                     stringResource(id = R.string.installed),
                     listOf(viewModel.installedVersion)
                 )
-                Versions(stringResource(id = R.string.remote), viewModel.remoteVersion)
-                Versions(stringResource(id = R.string.local), viewModel.localVersion)
+                Versions(stringResource(id = R.string.remote), viewModel.remoteVersions)
+                Versions(stringResource(id = R.string.local), viewModel.localVersions)
             }
         }
     }
@@ -138,7 +138,9 @@ fun VersionCard(version: VersionUi) {
                     )
                     Divider(modifier = Modifier.padding(top = 10.dp))
                     Row(
-                        modifier = Modifier.padding(horizontal = 5.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 5.dp)
+                            .height(48.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         when (version) {
@@ -164,7 +166,7 @@ fun RowScope.InstalledCardBottomRow(viewModel: MyViewModel, installed: VersionUi
     if (installed.isInstalled) {
         val launcher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult(),
-            onResult = { viewModel.onUninstall() })
+            onResult = { viewModel.refreshIfInstalledChanged() })
         Button(
             modifier = Modifier.weight(1f),
             elevation = null,
@@ -181,50 +183,50 @@ fun RowScope.RemoteCardBottomRow(viewModel: MyViewModel, remote: VersionUi.Remot
     val uiState by viewModel.getRemoteUiState(remote).collectAsState()
 
     @Composable
-    fun CancelButton() {
+    fun CancelButton(enable: Boolean) {
         Button(
             enabled = true,
             modifier = Modifier.weight(1f),
             elevation = null,
             colors = ButtonDefaults.textButtonColors(),
-            onClick = { viewModel.cancelDownload(remote) }) {
+            onClick = { if (enable) viewModel.cancelDownload(remote) }) {
             Text(text = stringResource(id = R.string.cancel))
         }
     }
 
     @Composable
-    fun ResumeButton() {
+    fun ResumeButton(enable: Boolean) {
         Button(
             enabled = true,
             modifier = Modifier.weight(1f),
             elevation = null,
             colors = ButtonDefaults.textButtonColors(),
-            onClick = { viewModel.resumeDownload(remote) }) {
+            onClick = { if (enable) viewModel.resumeDownload(remote) }) {
             Text(text = stringResource(id = R.string.resume))
         }
     }
 
     @Composable
-    fun PauseButton() {
+    fun PauseButton(enable: Boolean) {
         Button(
             enabled = true,
             modifier = Modifier.weight(1f),
             elevation = null,
             colors = ButtonDefaults.textButtonColors(),
-            onClick = { viewModel.pauseDownload(remote) }) {
+            onClick = { if (enable) viewModel.pauseDownload(remote) }) {
             Text(text = stringResource(id = R.string.pause))
         }
     }
 
     @Composable
-    fun DownloadButton() {
+    fun DownloadButton(enable: Boolean) {
         Button(
             enabled = true,
             modifier = Modifier.weight(1f),
             elevation = null,
             colors = ButtonDefaults.textButtonColors(),
-            onClick = { viewModel.download(remote) }) {
-            Text(text = stringResource(id = R.string.downloaded))
+            onClick = { if (enable) viewModel.download(remote) }) {
+            Text(text = stringResource(id = R.string.download))
         }
     }
 
@@ -232,34 +234,41 @@ fun RowScope.RemoteCardBottomRow(viewModel: MyViewModel, remote: VersionUi.Remot
     fun ProgressBar(progress: Float? = null) {
         if (progress == null)
             LinearProgressIndicator(modifier = Modifier.weight(1f))
-        else
+        else {
             LinearProgressIndicator(
                 modifier = Modifier.weight(1f),
                 progress = progress
             )
+        }
     }
     when (uiState) {
-        RemoteUiState.Downloaded -> {
-            Text(
-                text = stringResource(id = R.string.downloaded),
+        RemoteVersionUiState.Downloaded -> {
+            Button(
+                enabled = false,
                 modifier = Modifier.weight(1f),
-                color = ButtonDefaults.textButtonColors().contentColor(enabled = false).value
-            )
+                elevation = null,
+                colors = ButtonDefaults.textButtonColors(),
+                onClick = { }) {
+                Text(text = stringResource(id = R.string.downloaded))
+            }
         }
-        is RemoteUiState.Downloading -> {
-            CancelButton()
-            ProgressBar((uiState as RemoteUiState.Downloading).progress)
-            PauseButton()
+        is RemoteVersionUiState.Downloading -> {
+            val operable = (uiState as RemoteVersionUiState.Downloading).operable
+            CancelButton(operable)
+            ProgressBar((uiState as RemoteVersionUiState.Downloading).progress)
+            PauseButton(operable)
         }
-        RemoteUiState.Idle -> {
-            DownloadButton()
+        is RemoteVersionUiState.Idle -> {
+            val operable = (uiState as RemoteVersionUiState.Idle).operable
+            DownloadButton(operable)
         }
-        is RemoteUiState.Pausing -> {
-            CancelButton()
-            ResumeButton()
-            ProgressBar((uiState as RemoteUiState.Pausing).progress)
+        is RemoteVersionUiState.Pausing -> {
+            val operable = (uiState as RemoteVersionUiState.Pausing).operable
+            CancelButton(operable)
+            ProgressBar((uiState as RemoteVersionUiState.Pausing).progress)
+            ResumeButton(operable)
         }
-        RemoteUiState.Pending -> {
+        RemoteVersionUiState.Pending -> {
             ProgressBar()
         }
     }
@@ -274,12 +283,16 @@ fun RowScope.LocalCardBottomRow(viewModel: MyViewModel, local: VersionUi.Local) 
         onClick = { viewModel.delete(local) }) {
         Text(text = stringResource(id = R.string.delete_apk), color = Color.Red)
     }
-    if (!local.isInstalled)
+    if (!local.isInstalled) {
+        val launcher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+            onResult = { viewModel.refreshIfInstalledChanged() })
         Button(
             modifier = Modifier.weight(1f),
             elevation = null,
             colors = ButtonDefaults.textButtonColors(),
-            onClick = { viewModel.install(local) }) {
+            onClick = { viewModel.install(launcher, local) }) {
             Text(text = stringResource(id = R.string.install))
         }
+    }
 }

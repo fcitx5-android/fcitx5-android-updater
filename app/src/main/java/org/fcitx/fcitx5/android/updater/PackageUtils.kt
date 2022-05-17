@@ -3,8 +3,7 @@ package org.fcitx.fcitx5.android.updater
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import androidx.core.net.toUri
+import androidx.core.content.FileProvider
 import java.io.File
 
 object PackageUtils {
@@ -36,7 +35,14 @@ object PackageUtils {
 
     fun installIntent(apkFilePath: String) =
         Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(File(apkFilePath).toUri(), "application/vnd.android.package-archive")
+            setDataAndType(
+                FileProvider.getUriForFile(
+                    MyApplication.context,
+                    BuildConfig.APPLICATION_ID + ".provider",
+                    File(apkFilePath)
+                ), "application/vnd.android.package-archive"
+            )
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
     fun uninstallIntent(packageName: String) =
