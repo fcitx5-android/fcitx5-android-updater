@@ -2,7 +2,6 @@ package org.fcitx.fcitx5.android.updater.api
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.fcitx.fcitx5.android.updater.await
 import org.fcitx.fcitx5.android.updater.httpClient
@@ -16,8 +15,8 @@ object JenkinsApi {
             val request = Request.Builder()
                 .url("https://jenkins.fcitx-im.org/job/android/job/$job/api/json")
                 .build()
-            val response = httpClient.newCall(request).await()
             runCatching {
+                val response = httpClient.newCall(request).await()
                 val jObject = JSONObject(response.body!!.string())
                 val jArray = jObject.getJSONArray("builds")
                 val result = mutableListOf<Int>()
@@ -33,8 +32,8 @@ object JenkinsApi {
             val request = Request.Builder()
                 .url("https://jenkins.fcitx-im.org/job/android/job/$job/$buildNumber/api/json")
                 .build()
-            val response = httpClient.newCall(request).await()
             runCatching {
+                val response = httpClient.newCall(request).await()
                 val jObject = JSONObject(response.body!!.string())
                 val actions = jObject.getJSONArray("actions")
                 var buildData: JSONObject? = null

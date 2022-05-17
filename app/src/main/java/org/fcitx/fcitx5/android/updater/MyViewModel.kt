@@ -203,7 +203,10 @@ class MyViewModel : ViewModel() {
                     VersionUi.Remote(
                         versionName,
                         // Bytes to MB
-                        CommonApi.getContentLength(artifact.url)?.let { it / 1E6 } ?: .0,
+                        CommonApi.getContentLength(artifact.url)
+                            .getOrNull()
+                            ?.let { it / 1E6 }
+                            ?: .0,
                         versionName == installedVersion.versionName,
                         versionName in localVersions.map { it.versionName },
                         artifact.url

@@ -50,8 +50,7 @@ class DownloadTask(
             notify()
             runCatching {
                 if (contentLength == -1L)
-                    contentLength = CommonApi.getContentLength(url)
-                        ?: throw IOException("Failed to get content length")
+                    contentLength = CommonApi.getContentLength(url).getOrThrow()
                 if (start == contentLength) {
                     finished = true
                     return@runCatching

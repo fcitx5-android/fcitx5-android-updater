@@ -12,7 +12,10 @@ object CommonApi {
             .url(url)
             .head()
             .build()
-        val response = httpClient.newCall(request).await()
-        response.header("Content-Length")?.toLongOrNull()
+        runCatching {
+            val response = httpClient.newCall(request).await()
+            response.header("Content-Length")?.toLong()
+                ?: throw RuntimeException("Unable to get content length")
+        }
     }
 }

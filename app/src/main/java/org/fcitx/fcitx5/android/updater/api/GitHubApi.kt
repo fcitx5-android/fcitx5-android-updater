@@ -15,9 +15,9 @@ object GitHubApi {
                 .header("User-Agent", "request")
                 .head()
                 .build()
-            val response =
-                httpClient.newCall(request).await()
             runCatching {
+                val response =
+                    httpClient.newCall(request).await()
                 val links = response.header("Link")
                 checkNotNull(links) { "Unable to find 'Link' in headers" }
                 val result = REGEX.find(links)
