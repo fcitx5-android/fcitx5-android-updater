@@ -40,6 +40,8 @@ class MyViewModel : ViewModel() {
     private val VersionUi.isNowInstalled
         get() = installedVersion.versionName == versionName
 
+    private var lastVersionName = ""
+
     fun getRemoteUiState(remote: VersionUi.Remote) =
         remoteVersionUiStates.getOrPut(remote) {
             MutableStateFlow(
@@ -160,9 +162,8 @@ class MyViewModel : ViewModel() {
 
             } ?: VersionUi.NotInstalled
 
-
     fun refreshIfInstalledChanged() {
-        if (getInstalled(MyApplication.context) == VersionUi.NotInstalled)
+        if (getInstalled(MyApplication.context).versionName != lastVersionName)
             refresh()
     }
 
@@ -172,6 +173,7 @@ class MyViewModel : ViewModel() {
         viewModelScope.launch {
             _isRefreshing.emit(true)
             installedVersion = getInstalled(MyApplication.context)
+            lastVersionName = installedVersion.versionName
             localVersions.clear()
             externalDir
                 .listFiles { file: File -> file.extension == "apk" }
