@@ -17,7 +17,7 @@ object JenkinsApi {
                 .build()
             runCatching {
                 val response = httpClient.newCall(request).await()
-                val jObject = JSONObject(response.body!!.string())
+                val jObject = JSONObject(response.body.string())
                 val jArray = jObject.getJSONArray("builds")
                 val result = mutableListOf<Int>()
                 for (i in 0 until jArray.length()) {
@@ -34,7 +34,7 @@ object JenkinsApi {
                 .build()
             runCatching {
                 val response = httpClient.newCall(request).await()
-                val jObject = JSONObject(response.body!!.string())
+                val jObject = JSONObject(response.body.string())
                 val actions = jObject.getJSONArray("actions")
                 var buildData: JSONObject? = null
                 for (i in 0 until actions.length()) {

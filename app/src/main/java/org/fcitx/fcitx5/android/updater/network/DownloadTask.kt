@@ -10,7 +10,6 @@ import org.fcitx.fcitx5.android.updater.api.CommonApi
 import org.fcitx.fcitx5.android.updater.await
 import org.fcitx.fcitx5.android.updater.httpClient
 import java.io.File
-import java.io.IOException
 import java.io.RandomAccessFile
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -64,7 +63,7 @@ class DownloadTask(
                     return@runCatching
                 }
                 val response = httpClient.newCall(request).await()
-                response.body?.byteStream()?.use {
+                response.body.byteStream().use {
                     var bytesWritten = 0L
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                     var bytes = it.read(buffer)
@@ -78,7 +77,7 @@ class DownloadTask(
                     }
                     f.fd.sync()
                     finished = f.length() == contentLength
-                } ?: throw IOException("Failed to get body stream")
+                }
             }
                 .onSuccess {
                     job = null

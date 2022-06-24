@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    kotlin("android")
     id("kotlin-android")
     id("kotlin-parcelize")
 }
@@ -10,6 +9,7 @@ val accompanistVersion = "0.23.1"
 val lifecycleVersion = "2.4.1"
 
 android {
+    namespace = "org.fcitx.fcitx5.android.updater"
     compileSdk = 31
     buildToolsVersion = "31.0.0"
     defaultConfig {
@@ -50,8 +50,8 @@ android {
 }
 
 dependencies {
-    implementation("com.squareup.okhttp3:okhttp:4.9.3")
-    implementation("androidx.core:core-ktx:1.7.0")
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.9")
+    implementation("androidx.core:core-ktx:1.8.0")
     implementation("androidx.compose.ui:ui:$composeVersion")
     implementation("androidx.compose.material:material:$composeVersion")
     implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
