@@ -91,7 +91,8 @@ fun VersionList(paddingValues: PaddingValues = PaddingValues(0.dp)) {
                     listOf(viewModel.installedVersion)
                 )
                 Versions(
-                    stringResource(id = R.string.versions), viewModel.allVersions.values
+                    stringResource(id = R.string.versions),
+                    viewModel.allVersions.values.sortedByDescending { it.versionName }
                 )
             }
         }
