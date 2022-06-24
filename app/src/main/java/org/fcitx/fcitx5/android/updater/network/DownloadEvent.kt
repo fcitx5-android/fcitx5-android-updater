@@ -11,5 +11,6 @@ sealed interface DownloadEvent {
     object StartPurging : DownloadEvent
     object StartPausing : DownloadEvent
     object Downloaded : DownloadEvent
+    object StartWaitingRetry : DownloadEvent
     data class Failed(val cause: Throwable) : DownloadEvent
 }

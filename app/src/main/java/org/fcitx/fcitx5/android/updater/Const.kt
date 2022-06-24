@@ -9,4 +9,5 @@ object Const {
     const val fcitx5AndroidJenkinsJobName = "fcitx5-android"
     const val fcitx5AndroidGitHubOwner = "fcitx5-android"
     const val fcitx5AndroidGitHubRepo = "fcitx5-android"
+    const val retryDuration = 1500L
 }

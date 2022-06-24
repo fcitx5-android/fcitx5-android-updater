@@ -2,11 +2,10 @@ package org.fcitx.fcitx5.android.updater
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -33,23 +32,23 @@ class MyViewModel : ViewModel() {
         get() = _isRefreshing.asStateFlow()
 
     var installedVersion by mutableStateOf(VersionUi.NotInstalled)
+        private set
+    private var remoteVersions = mutableMapOf<String, VersionUi.Remote>()
+    private val localVersions = mutableMapOf<String, VersionUi.Local>()
 
-    var remoteVersions = mutableStateListOf<VersionUi.Remote>()
-    val localVersions = mutableStateListOf<VersionUi.Local>()
+    val allVersions = mutableStateMapOf<String, VersionUi>()
 
     private val VersionUi.isNowInstalled
         get() = installedVersion.versionName == versionName
 
     private var lastVersionName = ""
 
+    private val _toastMessage = MutableSharedFlow<String>()
+    val toastMessage = _toastMessage.asSharedFlow()
+
     fun getRemoteUiState(remote: VersionUi.Remote) =
         remoteVersionUiStates.getOrPut(remote) {
-            MutableStateFlow(
-                if (remote.isDownloaded)
-                    RemoteVersionUiState.Downloaded
-                else
-                    RemoteVersionUiState.Idle(true)
-            )
+            MutableStateFlow(RemoteVersionUiState.Idle(true))
         }.asStateFlow()
 
     fun uninstall(
@@ -59,13 +58,11 @@ class MyViewModel : ViewModel() {
     }
 
     fun download(remote: VersionUi.Remote) {
-        Log.d("m", "download")
         val flow = remoteVersionUiStates.getValue(remote)
         val task = DownloadTask(remote.downloadUrl, File(externalDir, remote.versionName + ".apk"))
         var progress = .0f
-        task.eventFlow.onEach {
-            Log.e("g", it.toString())
-            when (it) {
+        task.eventFlow.onEach { event ->
+            when (event) {
                 DownloadEvent.StartCreating -> {
                     flow.emit(RemoteVersionUiState.Idle(false))
                 }
@@ -83,17 +80,17 @@ class MyViewModel : ViewModel() {
                 }
                 DownloadEvent.Downloaded -> {
                     flow.emit(RemoteVersionUiState.Downloaded)
-                    localVersions.add(
-                        VersionUi.Local(
-                            remote.versionName,
-                            remote.size,
-                            remote.isNowInstalled,
-                            task.file
-                        )
+                    val local = VersionUi.Local(
+                        remote.versionName,
+                        remote.size,
+                        remote.isNowInstalled,
+                        task.file
                     )
+                    localVersions[remote.versionName] = local
+                    allVersions[remote.versionName] = local
                 }
                 is DownloadEvent.Failed -> {
-                    flow.emit(RemoteVersionUiState.Idle(true))
+                    _toastMessage.emit(event.cause.message ?: event.cause.stackTraceToString())
                 }
                 DownloadEvent.Paused -> {
                     flow.emit(RemoteVersionUiState.Pausing(true, progress))
@@ -102,11 +99,14 @@ class MyViewModel : ViewModel() {
                     flow.emit(RemoteVersionUiState.Idle(true))
                 }
                 is DownloadEvent.Downloading -> {
-                    progress = it.progress.toFloat()
+                    progress = event.progress.toFloat()
                     flow.emit(RemoteVersionUiState.Downloading(true, progress))
                 }
                 DownloadEvent.StartPurging -> {
                     flow.emit(RemoteVersionUiState.Downloading(false, progress))
+                }
+                DownloadEvent.StartWaitingRetry -> {
+                    flow.emit(RemoteVersionUiState.WaitingRetry)
                 }
             }
         }.let {
@@ -133,11 +133,15 @@ class MyViewModel : ViewModel() {
 
     fun delete(local: VersionUi.Local) {
         local.archiveFile.delete()
-        localVersions.remove(local)
-        remoteVersions.find { it.versionName == local.versionName }?.let {
+        val version = local.versionName
+        localVersions.remove(version)
+        remoteVersions[version]?.let {
+            allVersions[version] = it
             viewModelScope.launch {
-                remoteVersionUiStates.getValue(it).emit(RemoteVersionUiState.Idle(true))
+                remoteVersionUiStates[it]?.emit(RemoteVersionUiState.Idle(true))
             }
+        } ?: run {
+            allVersions.remove(version)
         }
     }
 
@@ -189,9 +193,12 @@ class MyViewModel : ViewModel() {
                             )
                         }
                 }
-                ?.let { localVersions.addAll(it) }
+                ?.forEach {
+                    localVersions[it.versionName] = it
+                    allVersions[it.versionName] = it
+                }
             remoteVersions.clear()
-            remoteVersions.addAll(JenkinsApi.getAllWorkflowRuns(Const.fcitx5AndroidJenkinsJobName)
+            JenkinsApi.getAllWorkflowRuns(Const.fcitx5AndroidJenkinsJobName)
                 .mapNotNull {
                     it.getOrNull()?.artifacts?.selectByABI()?.let { artifact ->
                         artifact.extractVersionName()?.let { versionName ->
@@ -208,11 +215,14 @@ class MyViewModel : ViewModel() {
                             ?.let { it / 1E6 }
                             ?: .0,
                         versionName == installedVersion.versionName,
-                        versionName in localVersions.map { it.versionName },
                         artifact.url
                     )
                 }
-            )
+                .forEach {
+                    remoteVersions[it.versionName] = it
+                    if (it.versionName !in localVersions)
+                        allVersions[it.versionName] = it
+                }
             _isRefreshing.emit(false)
         }
     }

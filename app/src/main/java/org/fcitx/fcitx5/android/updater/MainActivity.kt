@@ -1,11 +1,11 @@
 package org.fcitx.fcitx5.android.updater
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,11 +13,13 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -30,6 +32,8 @@ import com.google.accompanist.insets.ui.TopAppBar
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import okhttp3.internal.format
 import org.fcitx.fcitx5.android.updater.ui.theme.Fcitx5ForAndroidUpdaterTheme
 
@@ -42,6 +46,13 @@ class MainActivity : ComponentActivity() {
                 val systemUiController = rememberSystemUiController()
                 systemUiController.setSystemBarsColor(Color.Transparent)
                 ProvideWindowInsets {
+                    val viewModel: MyViewModel = viewModel()
+                    val context = LocalContext.current
+                    LaunchedEffect(Unit) {
+                        viewModel.toastMessage.onEach {
+                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                        }.launchIn(this)
+                    }
                     Screen()
                 }
             }
@@ -79,8 +90,9 @@ fun VersionList(paddingValues: PaddingValues = PaddingValues(0.dp)) {
                     stringResource(id = R.string.installed),
                     listOf(viewModel.installedVersion)
                 )
-                Versions(stringResource(id = R.string.remote), viewModel.remoteVersions)
-                Versions(stringResource(id = R.string.local), viewModel.localVersions)
+                Versions(
+                    stringResource(id = R.string.versions), viewModel.allVersions.values
+                )
             }
         }
     }
@@ -88,7 +100,7 @@ fun VersionList(paddingValues: PaddingValues = PaddingValues(0.dp)) {
 }
 
 @Composable
-fun Versions(name: String, versions: List<VersionUi>) {
+fun Versions(name: String, versions: Iterable<VersionUi>) {
     VersionListSurface {
         Column {
             Text(
@@ -114,45 +126,43 @@ fun VersionListSurface(content: @Composable () -> Unit) {
 @Composable
 fun VersionCard(version: VersionUi) {
     val viewModel: MyViewModel = viewModel()
-    AnimatedVisibility(visible = true) {
-        Card(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            elevation = 4.dp,
-        ) {
-            Box {
-                if (version.isInstalled)
-                    Icon(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(10.dp),
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                    )
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = version.versionName, style = MaterialTheme.typography.h5)
-                    Text(
-                        text = "${format("%.2f", version.size)} MB",
-                        style = MaterialTheme.typography.caption
-                    )
-                    Divider(modifier = Modifier.padding(top = 10.dp))
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 5.dp)
-                            .height(48.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        when (version) {
-                            is VersionUi.Local -> {
-                                LocalCardBottomRow(viewModel, version)
-                            }
-                            is VersionUi.Remote -> {
-                                RemoteCardBottomRow(viewModel, version)
-                            }
-                            is VersionUi.Installed -> {
-                                InstalledCardBottomRow(viewModel, version)
-                            }
+    Card(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth(),
+        elevation = 4.dp,
+    ) {
+        Box {
+            if (version.isInstalled)
+                Icon(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp),
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                )
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(text = version.versionName, style = MaterialTheme.typography.h5)
+                Text(
+                    text = "${format("%.2f", version.size)} MB",
+                    style = MaterialTheme.typography.caption
+                )
+                Divider(modifier = Modifier.padding(top = 10.dp))
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 5.dp)
+                        .height(48.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    when (version) {
+                        is VersionUi.Local -> {
+                            LocalCardBottomRow(viewModel, version)
+                        }
+                        is VersionUi.Remote -> {
+                            RemoteCardBottomRow(viewModel, version)
+                        }
+                        is VersionUi.Installed -> {
+                            InstalledCardBottomRow(viewModel, version)
                         }
                     }
                 }
@@ -270,6 +280,10 @@ fun RowScope.RemoteCardBottomRow(viewModel: MyViewModel, remote: VersionUi.Remot
         }
         RemoteVersionUiState.Pending -> {
             ProgressBar()
+        }
+        RemoteVersionUiState.WaitingRetry -> {
+            Text(text = stringResource(id = R.string.waiting_retry))
+            CancelButton(true)
         }
     }
 }

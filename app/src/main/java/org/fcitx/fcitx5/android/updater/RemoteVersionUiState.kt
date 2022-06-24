@@ -6,4 +6,5 @@ sealed interface RemoteVersionUiState {
     object Downloaded : RemoteVersionUiState
     object Pending : RemoteVersionUiState
     data class Idle(val operable: Boolean) : RemoteVersionUiState
+    object WaitingRetry : RemoteVersionUiState
 }

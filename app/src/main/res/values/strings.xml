@@ -5,10 +5,10 @@
     <string name="uninstall">Uninstall</string>
     <string name="install">Install</string>
     <string name="delete_apk">Delete APK</string>
-    <string name="remote">Remote</string>
-    <string name="local">Local</string>
     <string name="installed">Installed</string>
+    <string name="versions">Versions</string>
     <string name="cancel">Cancel</string>
     <string name="resume">Resume</string>
     <string name="pause">Pause</string>
+    <string name="waiting_retry">Waiting for retry</string>
 </resources>

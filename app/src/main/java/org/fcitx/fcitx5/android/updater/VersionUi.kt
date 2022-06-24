@@ -24,7 +24,6 @@ sealed interface VersionUi : Parcelable {
         override val versionName: String,
         override val size: Double,
         override val isInstalled: Boolean,
-        val isDownloaded: Boolean,
         val downloadUrl: String
     ) : VersionUi
 

@@ -5,12 +5,14 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import okhttp3.Request
+import org.fcitx.fcitx5.android.updater.Const
 import org.fcitx.fcitx5.android.updater.api.CommonApi
 import org.fcitx.fcitx5.android.updater.await
 import org.fcitx.fcitx5.android.updater.httpClient
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
+import java.util.concurrent.atomic.AtomicBoolean
 
 // not thread-safe
 class DownloadTask(
@@ -23,19 +25,25 @@ class DownloadTask(
 
     private val _eventFlow: MutableSharedFlow<DownloadEvent> = MutableSharedFlow(
         replay = 0,
-        extraBufferCapacity = 1,
+        extraBufferCapacity = 3,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
     val eventFlow = _eventFlow.asSharedFlow()
 
+    @Volatile
     var job: Job? = null
 
+    @Volatile
     private var created = false
 
+    @Volatile
     private var finished = false
 
+    @Volatile
     private var contentLength = -1L
+
+    private val stopRetry = AtomicBoolean(false)
 
     private fun createJob(startEvent: DownloadEvent, notify: suspend () -> Unit) {
         job = launch {
@@ -81,7 +89,14 @@ class DownloadTask(
                 }
                 .onFailure {
                     job = null
+                    created = false
                     _eventFlow.emit(DownloadEvent.Failed(it))
+                    _eventFlow.emit(DownloadEvent.StartWaitingRetry)
+                    delay(Const.retryDuration)
+                    if (!stopRetry.get()) {
+                        start()
+                    }
+                    stopRetry.compareAndSet(true, false)
                 }
 
         }
@@ -126,6 +141,7 @@ class DownloadTask(
 
     fun purge() {
         launch {
+            stopRetry.set(true)
             job?.cancelAndJoin()
             job = null
             if (!finished)
