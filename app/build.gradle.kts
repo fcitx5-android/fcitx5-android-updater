@@ -51,6 +51,7 @@ android {
 }
 
 dependencies {
+    implementation("net.swiftzer.semver:semver:1.1.2")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.9")
     implementation("androidx.core:core-ktx:1.8.0")
     implementation("androidx.compose.ui:ui:$composeVersion")

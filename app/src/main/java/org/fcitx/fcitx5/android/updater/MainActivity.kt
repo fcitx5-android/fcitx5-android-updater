@@ -34,6 +34,7 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import net.swiftzer.semver.SemVer
 import okhttp3.internal.format
 import org.fcitx.fcitx5.android.updater.ui.theme.Fcitx5ForAndroidUpdaterTheme
 
@@ -92,7 +93,11 @@ fun VersionList(paddingValues: PaddingValues = PaddingValues(0.dp)) {
                 )
                 Versions(
                     stringResource(id = R.string.versions),
-                    viewModel.allVersions.values.sortedByDescending { it.versionName }
+                    viewModel.allVersions.values.sortedByDescending {
+                        parseVersionNumber(it.versionName).getOrThrow().let { (a, b, _) ->
+                            SemVer.parse("$a-$b")
+                        }
+                    }
                 )
             }
         }
