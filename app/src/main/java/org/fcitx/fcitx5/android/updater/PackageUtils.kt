@@ -2,36 +2,50 @@ package org.fcitx.fcitx5.android.updater
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.core.content.FileProvider
 import java.io.File
+import kotlin.math.pow
 
 object PackageUtils {
 
     fun getVersionName(context: Context, apkFilePath: String) =
-        context.packageManager.getPackageArchiveInfo(apkFilePath, 0)?.versionName
+        context.packageManager.run {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getPackageArchiveInfo(apkFilePath, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                getPackageArchiveInfo(apkFilePath, 0)
+            }?.versionName
+        }
 
     fun getInstalledVersionName(context: Context, packageName: String) =
-        runCatching {
-            context.packageManager.getPackageInfo(
-                packageName,
-                0
-            ).versionName
+        context.packageManager.runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                getPackageInfo(packageName, 0)
+            }.versionName
         }.getOrNull()
 
-
-    fun getInstalledSize(context: Context, packageName: String) = runCatching {
-        context.packageManager.getApplicationInfo(
-            packageName,
-            0
-        ).publicSourceDir.let { src ->
-            File(src)
-                .length()
-                .takeIf { it != 0L }
-                // Bytes to MB
-                ?.let { it / 1E6 }
-        }
-    }.getOrNull()
+    fun getInstalledSize(context: Context, packageName: String) =
+        context.packageManager.runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0L))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getApplicationInfo(packageName, 0)
+            }.publicSourceDir.let { src ->
+                File(src)
+                    .length()
+                    .takeIf { it != 0L }
+                    // Bytes to MiB
+                    ?.let { it / 2.0.pow(20) }
+            }
+        }.getOrNull()
 
     fun installIntent(apkFilePath: String) =
         Intent(Intent.ACTION_VIEW).apply {
