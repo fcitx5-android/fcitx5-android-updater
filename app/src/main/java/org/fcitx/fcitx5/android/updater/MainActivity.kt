@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
                         exportFile = it.file
                         exportLauncher.launch(it.name)
                     }
-                    // TODO shared installed apk with FileProvider
+                    // TODO: share installed apk with FileProvider
                 }
             }.launchIn(this)
         }
