@@ -18,8 +18,9 @@ import org.fcitx.fcitx5.android.updater.api.JenkinsApi
 import org.fcitx.fcitx5.android.updater.network.DownloadEvent
 import org.fcitx.fcitx5.android.updater.network.DownloadTask
 import java.io.File
+import kotlin.math.pow
 
-class MyViewModel : ViewModel() {
+class MainViewModel : ViewModel() {
     private val _isRefreshing = MutableStateFlow(false)
 
     private val remoteVersionUiStates: MutableMap<VersionUi.Remote, MutableStateFlow<RemoteVersionUiState>> =
@@ -186,8 +187,8 @@ class MyViewModel : ViewModel() {
                         ?.let { versionName ->
                             VersionUi.Local(
                                 versionName,
-                                // Bytes to MB
-                                it.length() / 1E6,
+                                // Bytes to MiB
+                                it.length() / 2.0.pow(20),
                                 installedVersion.versionName == versionName,
                                 it
                             )
@@ -209,10 +210,10 @@ class MyViewModel : ViewModel() {
                 .parallelMap { (artifact, versionName) ->
                     VersionUi.Remote(
                         versionName,
-                        // Bytes to MB
+                        // Bytes to MiB
                         CommonApi.getContentLength(artifact.url)
                             .getOrNull()
-                            ?.let { it / 1E6 }
+                            ?.let { it / 2.0.pow(20) }
                             ?: .0,
                         versionName == installedVersion.versionName,
                         artifact.url

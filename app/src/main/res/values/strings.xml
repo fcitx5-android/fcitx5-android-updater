@@ -11,4 +11,7 @@
     <string name="resume">Resume</string>
     <string name="pause">Pause</string>
     <string name="waiting_retry">Waiting for retry</string>
+    <string name="share">Share</string>
+    <string name="export">Export</string>
+    <string name="copy_url">Copy URL</string>
 </resources>
