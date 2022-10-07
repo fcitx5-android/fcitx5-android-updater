@@ -1,9 +1,14 @@
 package org.fcitx.fcitx5.android.updater
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,15 +20,14 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -36,26 +40,67 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import net.swiftzer.semver.SemVer
 import org.fcitx.fcitx5.android.updater.ui.components.VersionCard
 import org.fcitx.fcitx5.android.updater.ui.theme.Fcitx5ForAndroidUpdaterTheme
+import java.io.File
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: MainViewModel by viewModels()
+
+    private lateinit var intentLauncher: ActivityResultLauncher<Intent>
+
+    private lateinit var exportLauncher: ActivityResultLauncher<String>
+    private lateinit var exportFile: File
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        intentLauncher = registerForActivityResult(StartActivityForResult()) {
+            viewModel.refreshIfInstalledChanged()
+        }
+        exportLauncher = registerForActivityResult(CreateDocument(Const.apkMineType)) {
+            it?.let { uri ->
+                lifecycleScope.launch {
+                    contentResolver.openOutputStream(uri)?.use { o ->
+                        exportFile.inputStream().use { i ->
+                            i.copyTo(o)
+                        }
+                    }
+                }
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.toastMessage.onEach {
+                Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show()
+            }.launchIn(this)
+            viewModel.fileOperation.onEach {
+                when (it) {
+                    is FileOperation.Install -> {
+                        intentLauncher.launch(PackageUtils.installIntent(it.file))
+                    }
+                    FileOperation.Uninstall -> {
+                        intentLauncher.launch(PackageUtils.uninstallIntent())
+                    }
+                    is FileOperation.Share -> {
+                        val shareIntent = PackageUtils.shareIntent(it.file, it.name)
+                        startActivity(Intent.createChooser(shareIntent, it.name))
+                    }
+                    is FileOperation.Export -> {
+                        exportFile = it.file
+                        exportLauncher.launch(it.name)
+                    }
+                    // TODO shared installed apk with FileProvider
+                }
+            }.launchIn(this)
+        }
         setContent {
             Fcitx5ForAndroidUpdaterTheme {
                 val systemUiController = rememberSystemUiController()
                 systemUiController.setSystemBarsColor(Color.Transparent)
                 ProvideWindowInsets {
-                    val viewModel: MainViewModel = viewModel()
-                    val context = LocalContext.current
-                    LaunchedEffect(Unit) {
-                        viewModel.toastMessage.onEach {
-                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                        }.launchIn(this)
-                    }
                     Screen()
                 }
             }

@@ -60,4 +60,4 @@ fun parseVersionNumber(raw: String): Result<Triple<String, Int, String>> = runCa
 
 val httpClient = OkHttpClient()
 
-val externalDir by lazy { MyApplication.context.getExternalFilesDir(null)!! }
+val externalDir by lazy { UpdaterApplication.context.getExternalFilesDir(null)!! }

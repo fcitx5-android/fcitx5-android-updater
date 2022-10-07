@@ -1,9 +1,6 @@
 package org.fcitx.fcitx5.android.updater
 
 import android.content.Context
-import android.content.Intent
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,15 +44,18 @@ class MainViewModel : ViewModel() {
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage = _toastMessage.asSharedFlow()
 
+    private val _fileOperation = MutableSharedFlow<FileOperation>()
+    val fileOperation = _fileOperation.asSharedFlow()
+
     fun getRemoteUiState(remote: VersionUi.Remote) =
         remoteVersionUiStates.getOrPut(remote) {
             MutableStateFlow(RemoteVersionUiState.Idle(true))
         }.asStateFlow()
 
-    fun uninstall(
-        launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
-    ) {
-        launcher.launch(PackageUtils.uninstallIntent(Const.fcitx5AndroidPackageName))
+    fun uninstall() {
+        viewModelScope.launch {
+            _fileOperation.emit(FileOperation.Uninstall)
+        }
     }
 
     fun download(remote: VersionUi.Remote) {
@@ -132,6 +132,10 @@ class MainViewModel : ViewModel() {
         remoteDownloadTasks[remote]?.purge()
     }
 
+    fun getRemoteUrl(local: VersionUi.Local): String? {
+        return remoteVersions[local.versionName]?.downloadUrl
+    }
+
     fun delete(local: VersionUi.Local) {
         local.archiveFile.delete()
         val version = local.versionName
@@ -146,11 +150,31 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun install(
-        launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
-        local: VersionUi.Local
-    ) {
-        launcher.launch(PackageUtils.installIntent(local.archiveFile.path))
+    fun install(local: VersionUi.Local) {
+        viewModelScope.launch {
+            _fileOperation.emit(FileOperation.Install(local.archiveFile))
+        }
+    }
+
+    fun share(local: VersionUi.Local) {
+        viewModelScope.launch {
+            _fileOperation.emit(FileOperation.Share(local.archiveFile, local.displayName))
+        }
+    }
+
+    fun export(local: VersionUi.Local) {
+        viewModelScope.launch {
+            _fileOperation.emit(FileOperation.Export(local.archiveFile, local.displayName))
+        }
+    }
+
+    fun exportInstalled() {
+        val installedPath = PackageUtils.getInstalledPath(UpdaterApplication.context) ?: return
+        viewModelScope.launch {
+            _fileOperation.emit(
+                FileOperation.Export(File(installedPath), installedVersion.displayName)
+            )
+        }
     }
 
     init {
@@ -158,9 +182,9 @@ class MainViewModel : ViewModel() {
     }
 
     private fun getInstalled(context: Context) =
-        PackageUtils.getInstalledVersionName(context, Const.fcitx5AndroidPackageName)
+        PackageUtils.getInstalledVersionName(context)
             ?.let { version ->
-                PackageUtils.getInstalledSize(context, Const.fcitx5AndroidPackageName)
+                PackageUtils.getInstalledSize(context)
                     ?.let { size ->
                         VersionUi.Installed(version, size)
                     }
@@ -168,7 +192,7 @@ class MainViewModel : ViewModel() {
             } ?: VersionUi.NotInstalled
 
     fun refreshIfInstalledChanged() {
-        if (getInstalled(MyApplication.context).versionName != lastVersionName)
+        if (getInstalled(UpdaterApplication.context).versionName != lastVersionName)
             refresh()
     }
 
@@ -177,13 +201,13 @@ class MainViewModel : ViewModel() {
             return
         viewModelScope.launch {
             _isRefreshing.emit(true)
-            installedVersion = getInstalled(MyApplication.context)
+            installedVersion = getInstalled(UpdaterApplication.context)
             lastVersionName = installedVersion.versionName
             localVersions.clear()
             externalDir
                 .listFiles { file: File -> file.extension == "apk" }
                 ?.mapNotNull {
-                    PackageUtils.getVersionName(MyApplication.context, it.absolutePath)
+                    PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
                         ?.let { versionName ->
                             VersionUi.Local(
                                 versionName,

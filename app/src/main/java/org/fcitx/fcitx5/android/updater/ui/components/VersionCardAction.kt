@@ -1,8 +1,5 @@
 package org.fcitx.fcitx5.android.updater.ui.components
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -26,13 +23,10 @@ import org.fcitx.fcitx5.android.updater.VersionUi
 fun VersionCardActionInstalled(version: VersionUi.Installed, modifier: Modifier) {
     if (version.isInstalled) {
         val viewModel: MainViewModel = viewModel()
-        val launcher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult(),
-            onResult = { viewModel.refreshIfInstalledChanged() })
         ConstraintLayout(modifier = modifier) {
             val (action) = createRefs()
             TextButton(
-                onClick = { viewModel.uninstall(launcher) },
+                onClick = { viewModel.uninstall() },
                 modifier = Modifier.constrainAs(action) {
                     top.linkTo(parent.top)
                     end.linkTo(parent.end)
@@ -58,11 +52,8 @@ fun VersionCardActionLocal(version: VersionUi.Local, modifier: Modifier) {
                 content = { Text(text = stringResource(R.string.delete_apk)) }
             )
         } else {
-            val launcher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.StartActivityForResult(),
-                onResult = { viewModel.refreshIfInstalledChanged() })
             TextButton(
-                onClick = { viewModel.install(launcher, version) },
+                onClick = { viewModel.install(version) },
                 modifier = Modifier.constrainAs(action) {
                     top.linkTo(parent.top)
                     end.linkTo(parent.end)

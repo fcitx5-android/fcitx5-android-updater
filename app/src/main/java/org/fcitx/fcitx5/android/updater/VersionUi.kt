@@ -35,6 +35,9 @@ sealed interface VersionUi : Parcelable {
         val archiveFile: File
     ) : VersionUi
 
+    val displayName: String
+        get() = "${Const.fcitx5AndroidPackageName}-$versionName-${Const.deviceABI}.apk"
+
     companion object {
         val NotInstalled = Installed("N/A", .0, false)
     }

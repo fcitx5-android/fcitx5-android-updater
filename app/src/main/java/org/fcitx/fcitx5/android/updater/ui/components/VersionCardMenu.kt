@@ -1,18 +1,11 @@
 package org.fcitx.fcitx5.android.updater.ui.components
 
-import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.fcitx.fcitx5.android.updater.MainViewModel
 import org.fcitx.fcitx5.android.updater.R
@@ -21,23 +14,49 @@ import org.fcitx.fcitx5.android.updater.VersionUi
 
 @Composable
 fun VersionCardMenuInstalled(version: VersionUi.Installed, dismissMenu: () -> Unit) {
-    val viewModel: MainViewModel = viewModel()
-    DropdownMenuItem(onClick = { dismissMenu() }) {
-        Text(stringResource(R.string.share))
-    }
-    DropdownMenuItem(onClick = { dismissMenu() }) {
-        Text(stringResource(R.string.export))
+    if (version.isInstalled) {
+        val viewModel: MainViewModel = viewModel()
+        DropdownMenuItem(
+            onClick = {
+                dismissMenu()
+                viewModel.exportInstalled()
+            }
+        ) {
+            Text(stringResource(R.string.export))
+        }
     }
 }
 
 @Composable
 fun VersionCardMenuLocal(version: VersionUi.Local, dismissMenu: () -> Unit) {
     val viewModel: MainViewModel = viewModel()
-    DropdownMenuItem(onClick = { dismissMenu() }) {
+    DropdownMenuItem(
+        onClick = {
+            dismissMenu()
+            viewModel.share(version)
+        }
+    ) {
         Text(stringResource(R.string.share))
     }
-    DropdownMenuItem(onClick = { dismissMenu() }) {
+    DropdownMenuItem(
+        onClick = {
+            dismissMenu()
+            viewModel.export(version)
+        }
+    ) {
         Text(stringResource(R.string.export))
+    }
+    val remoteUrl by remember { mutableStateOf(viewModel.getRemoteUrl(version)) }
+    remoteUrl?.let {
+        val clipboardManager = LocalClipboardManager.current
+        DropdownMenuItem(
+            onClick = {
+                dismissMenu()
+                clipboardManager.setText(AnnotatedString(it))
+            }
+        ) {
+            Text(stringResource(R.string.copy_url))
+        }
     }
     DropdownMenuItem(
         onClick = {
