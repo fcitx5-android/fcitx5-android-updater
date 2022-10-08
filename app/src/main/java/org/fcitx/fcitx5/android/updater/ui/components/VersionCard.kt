@@ -15,7 +15,7 @@ import org.fcitx.fcitx5.android.updater.VersionUi
 @Composable
 fun VersionCard(version: VersionUi) {
     Box(Modifier.clickable { }) {
-        ConstraintLayout(Modifier.padding(16.dp)) {
+        ConstraintLayout(Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)) {
             val (title, size, menu, action) = createRefs()
             Text(text = version.versionName,
                 style = MaterialTheme.typography.body1,
@@ -23,12 +23,14 @@ fun VersionCard(version: VersionUi) {
                     top.linkTo(parent.top)
                     start.linkTo(parent.start)
                 })
-            Text(text = String.format("%.2f MiB", version.size),
-                style = MaterialTheme.typography.body2,
-                modifier = Modifier.constrainAs(size) {
-                    top.linkTo(title.bottom, 4.dp)
-                    start.linkTo(parent.start)
-                })
+            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
+                Text(text = String.format("%.2f MiB", version.size),
+                    style = MaterialTheme.typography.body2,
+                    modifier = Modifier.constrainAs(size) {
+                        top.linkTo(title.bottom, 4.dp)
+                        start.linkTo(parent.start)
+                    })
+            }
             Box(modifier = Modifier.constrainAs(menu) {
                 top.linkTo(parent.top)
                 end.linkTo(parent.end)
@@ -36,7 +38,9 @@ fun VersionCard(version: VersionUi) {
                 var menuExpanded by remember { mutableStateOf(false) }
                 val dismissMenu = { menuExpanded = false }
                 IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
-                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = null)
+                    CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
+                        Icon(imageVector = Icons.Filled.MoreVert, contentDescription = null)
+                    }
                 }
                 DropdownMenu(
                     expanded = menuExpanded,

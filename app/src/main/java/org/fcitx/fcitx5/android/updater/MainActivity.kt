@@ -145,17 +145,21 @@ fun Screen() {
 }
 
 @Composable
-fun Versions(name: String, versions: Iterable<VersionUi>) {
-    Column(Modifier.padding(vertical = 8.dp)) {
+fun Versions(name: String, versions: List<VersionUi>) {
+    Column {
         Text(
             text = name,
-            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             style = MaterialTheme.typography.h6
         )
-        Surface(elevation = 4.dp) {
+        Surface(elevation = 2.dp) {
             Column {
-                for (v in versions)
-                    VersionCard(version = v)
+                val last = versions.size - 1
+                val dividerColor = MaterialTheme.colors.onSurface.copy(alpha = 0.06f)
+                versions.forEachIndexed { index, version ->
+                    VersionCard(version)
+                    if (index != last) Divider(color = dividerColor)
+                }
             }
         }
     }

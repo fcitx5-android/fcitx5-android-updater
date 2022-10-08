@@ -1,10 +1,9 @@
 package org.fcitx.fcitx5.android.updater.ui.components
 
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -42,25 +41,14 @@ fun VersionCardActionLocal(version: VersionUi.Local, modifier: Modifier) {
     val viewModel: MainViewModel = viewModel()
     ConstraintLayout(modifier = modifier) {
         val (action) = createRefs()
-        if (version.isInstalled) {
-            TextButton(
-                onClick = { viewModel.delete(version) },
-                modifier = Modifier.constrainAs(action) {
-                    top.linkTo(parent.top)
-                    end.linkTo(parent.end)
-                },
-                content = { Text(text = stringResource(R.string.delete_apk)) }
-            )
-        } else {
-            TextButton(
-                onClick = { viewModel.install(version) },
-                modifier = Modifier.constrainAs(action) {
-                    top.linkTo(parent.top)
-                    end.linkTo(parent.end)
-                },
-                content = { Text(text = stringResource(R.string.install)) }
-            )
-        }
+        TextButton(
+            onClick = { viewModel.install(version) },
+            modifier = Modifier.constrainAs(action) {
+                top.linkTo(parent.top)
+                end.linkTo(parent.end)
+            },
+            content = { Text(stringResource(R.string.install)) }
+        )
     }
 }
 
@@ -70,8 +58,7 @@ fun VersionCardActionRemote(version: VersionUi.Remote, modifier: Modifier) {
     val state by viewModel.getRemoteUiState(version).collectAsState()
     ConstraintLayout(modifier = modifier) {
         val (button, progressText, progressBar) = createRefs()
-        val buttonModifier = Modifier.constrainAs(button) {
-            width = Dimension.value(96.dp)
+        val buttonModifier = Modifier.defaultMinSize(minWidth = 72.dp).constrainAs(button) {
             top.linkTo(parent.top)
             end.linkTo(parent.end)
             bottom.linkTo(parent.bottom)
@@ -79,7 +66,7 @@ fun VersionCardActionRemote(version: VersionUi.Remote, modifier: Modifier) {
         val progressTextModifier = Modifier.constrainAs(progressText) {
             width = Dimension.value(36.dp)
             top.linkTo(parent.top)
-            end.linkTo(button.start)
+            end.linkTo(button.start, 8.dp)
             bottom.linkTo(parent.bottom)
         }
         val progressBarModifier = Modifier.constrainAs(progressBar) {
@@ -106,12 +93,14 @@ fun VersionCardActionRemote(version: VersionUi.Remote, modifier: Modifier) {
                     content = { Text(text = stringResource(R.string.pause)) }
                 )
                 val progress = (state as RemoteVersionUiState.Downloading).progress
-                Text(
-                    text = "${(progress * 100).toInt()}%",
-                    modifier = progressTextModifier,
-                    textAlign = TextAlign.End,
-                    style = MaterialTheme.typography.body2
-                )
+                CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        modifier = progressTextModifier,
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.body2
+                    )
+                }
                 LinearProgressIndicator(progress = progress, modifier = progressBarModifier)
             }
             is RemoteVersionUiState.Idle -> {
@@ -130,12 +119,14 @@ fun VersionCardActionRemote(version: VersionUi.Remote, modifier: Modifier) {
                     content = { Text(text = stringResource(R.string.resume)) }
                 )
                 val progress = (state as RemoteVersionUiState.Pausing).progress
-                Text(
-                    text = "${(progress * 100).toInt()}%",
-                    modifier = progressTextModifier,
-                    textAlign = TextAlign.End,
-                    style = MaterialTheme.typography.body2
-                )
+                CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        modifier = progressTextModifier,
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.body2
+                    )
+                }
                 LinearProgressIndicator(progress = progress, modifier = progressBarModifier)
             }
             RemoteVersionUiState.Pending -> {
