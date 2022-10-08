@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">小企鹅输入法5更新器</string>
+    <string name="download">下载</string>
+    <string name="downloaded">已下载</string>
+    <string name="uninstall">卸载</string>
+    <string name="install">安装</string>
+    <string name="delete_apk">删除 APK</string>
+    <string name="installed">已安装</string>
+    <string name="versions">可用版本</string>
+    <string name="cancel">取消</string>
+    <string name="resume">恢复</string>
+    <string name="pause">暂停</string>
+    <string name="waiting_retry">等待重试中</string>
+    <string name="share">分享</string>
+    <string name="export">导出</string>
+    <string name="copy_url">复制链接</string>
+</resources>
