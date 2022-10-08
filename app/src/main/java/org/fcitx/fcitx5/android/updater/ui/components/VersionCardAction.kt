@@ -19,6 +19,15 @@ import org.fcitx.fcitx5.android.updater.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.VersionUi
 
 @Composable
+fun VersionCardAction(version: VersionUi, modifier: Modifier) {
+    when (version) {
+        is VersionUi.Installed -> VersionCardActionInstalled(version, modifier)
+        is VersionUi.Local -> VersionCardActionLocal(version, modifier)
+        is VersionUi.Remote -> VersionCardActionRemote(version, modifier)
+    }
+}
+
+@Composable
 fun VersionCardActionInstalled(version: VersionUi.Installed, modifier: Modifier) {
     if (version.isInstalled) {
         val viewModel: MainViewModel = viewModel()

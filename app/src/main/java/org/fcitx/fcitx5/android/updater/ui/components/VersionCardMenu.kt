@@ -1,16 +1,69 @@
 package org.fcitx.fcitx5.android.updater.ui.components
 
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.fcitx.fcitx5.android.updater.MainViewModel
 import org.fcitx.fcitx5.android.updater.R
 import org.fcitx.fcitx5.android.updater.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.VersionUi
+
+@Composable
+fun VersionCardMenu(version: VersionUi, modifier: Modifier) {
+    when (version) {
+        is VersionUi.Installed -> {
+            if (!version.isInstalled) return
+            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
+                VersionCardMenuInstalled(version, dismissMenu)
+            }
+        }
+        is VersionUi.Local -> {
+            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
+                VersionCardMenuLocal(version, dismissMenu)
+            }
+        }
+        is VersionUi.Remote -> {
+            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
+                VersionCardMenuRemote(version, dismissMenu)
+            }
+        }
+    }
+}
+
+@Composable
+fun VersionCardMenuIcon(
+    modifier: Modifier,
+    content: @Composable ColumnScope.(dismissMenu: () -> Unit) -> Unit
+) {
+    Box(modifier = modifier) {
+        var menuExpanded by remember { mutableStateOf(false) }
+        val dismissMenu = { menuExpanded = false }
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
+            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
+                Icon(imageVector = Icons.Filled.MoreVert, contentDescription = null)
+            }
+        }
+        DropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = dismissMenu,
+            modifier = Modifier.defaultMinSize(minWidth = 180.dp),
+            offset = DpOffset((-8).dp, (-56).dp),
+            content = { content(dismissMenu) }
+        )
+    }
+}
 
 @Composable
 fun VersionCardMenuInstalled(version: VersionUi.Installed, dismissMenu: () -> Unit) {
