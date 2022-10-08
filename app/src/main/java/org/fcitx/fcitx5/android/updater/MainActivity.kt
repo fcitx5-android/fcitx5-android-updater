@@ -2,6 +2,7 @@ package org.fcitx.fcitx5.android.updater
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -98,6 +99,16 @@ class MainActivity : ComponentActivity() {
                 Screen()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 }
 
