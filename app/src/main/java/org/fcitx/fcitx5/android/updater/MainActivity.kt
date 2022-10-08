@@ -9,17 +9,12 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.primarySurface
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -29,10 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.ProvideWindowInsets
-import com.google.accompanist.insets.navigationBarsHeight
-import com.google.accompanist.insets.rememberInsetsPaddingValues
 import com.google.accompanist.insets.ui.Scaffold
 import com.google.accompanist.insets.ui.TopAppBar
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -97,12 +88,14 @@ class MainActivity : ComponentActivity() {
             }.launchIn(this)
         }
         setContent {
+            val systemUiController = rememberSystemUiController()
             Fcitx5ForAndroidUpdaterTheme {
-                val systemUiController = rememberSystemUiController()
-                systemUiController.setSystemBarsColor(Color.Transparent)
-                ProvideWindowInsets {
-                    Screen()
+                val useDarkIcons = MaterialTheme.colors.isLight
+                SideEffect {
+                    systemUiController.setStatusBarColor(Color.Transparent)
+                    systemUiController.setNavigationBarColor(Color.Transparent, useDarkIcons)
                 }
+                Screen()
             }
         }
     }
@@ -112,16 +105,17 @@ class MainActivity : ComponentActivity() {
 fun Screen() {
     val viewModel: MainViewModel = viewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    Scaffold(topBar = {
-        TopAppBar(
-            title = { Text(text = stringResource(R.string.app_name)) },
-            backgroundColor = MaterialTheme.colors.primarySurface,
-            contentPadding = rememberInsetsPaddingValues(
-                LocalWindowInsets.current.statusBars,
-                applyBottom = false,
+    Scaffold(
+        modifier = Modifier
+            .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                backgroundColor = MaterialTheme.colors.primarySurface,
+                contentPadding = WindowInsets.statusBars.asPaddingValues()
             )
-        )
-    }) { paddingValues ->
+        }
+    ) { paddingValues ->
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
             onRefresh = { viewModel.refresh() },
@@ -140,7 +134,11 @@ fun Screen() {
                         }
                     }
                 )
-                Spacer(Modifier.navigationBarsHeight(additional = 16.dp).fillMaxWidth())
+                Spacer(
+                    Modifier
+                        .padding(bottom = 16.dp)
+                        .windowInsetsBottomHeight(WindowInsets.navigationBars)
+                )
             }
         }
     }

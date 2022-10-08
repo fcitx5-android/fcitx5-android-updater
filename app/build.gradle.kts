@@ -59,10 +59,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
     implementation("androidx.activity:activity-compose:1.6.0")
-    val accompanistVersion = "0.23.1"
+    val accompanistVersion = "0.25.1"
     implementation("com.google.accompanist:accompanist-systemuicontroller:$accompanistVersion")
     implementation("com.google.accompanist:accompanist-swiperefresh:$accompanistVersion")
-    implementation("com.google.accompanist:accompanist-insets:$accompanistVersion")
     implementation("com.google.accompanist:accompanist-insets-ui:$accompanistVersion")
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
 }
