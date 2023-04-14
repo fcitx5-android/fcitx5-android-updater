@@ -129,8 +129,7 @@ fun Screen(viewModel: VersionViewModel) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Versions(
                     stringResource(R.string.installed),
-                    listOf(viewModel.installedVersion),
-                    viewModel
+                    listOf(viewModel.installedVersion)
                 )
                 Versions(
                     stringResource(R.string.versions),
@@ -138,8 +137,7 @@ fun Screen(viewModel: VersionViewModel) {
                         parseVersionNumber(it.versionName).getOrThrow().let { (a, b, _) ->
                             SemVer.parse("$a-$b")
                         }
-                    },
-                    viewModel
+                    }
                 )
                 Spacer(
                     Modifier
@@ -152,7 +150,7 @@ fun Screen(viewModel: VersionViewModel) {
 }
 
 @Composable
-fun Versions(name: String, versions: List<VersionUi>, viewModel: VersionViewModel) {
+fun Versions(name: String, versions: List<VersionUi>) {
     Column {
         Text(
             text = name,
@@ -164,7 +162,7 @@ fun Versions(name: String, versions: List<VersionUi>, viewModel: VersionViewMode
                 val last = versions.size - 1
                 val dividerColor = MaterialTheme.colors.onSurface.copy(alpha = 0.06f)
                 versions.forEachIndexed { index, version ->
-                    VersionCard(version, viewModel)
+                    VersionCard(version)
                     if (index != last) Divider(color = dividerColor)
                 }
             }

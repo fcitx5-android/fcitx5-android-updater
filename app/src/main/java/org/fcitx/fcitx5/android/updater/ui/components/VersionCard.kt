@@ -18,7 +18,7 @@ import org.fcitx.fcitx5.android.updater.VersionUi
 import org.fcitx.fcitx5.android.updater.VersionViewModel
 
 @Composable
-fun VersionCard(version: VersionUi, viewModel: VersionViewModel) {
+fun VersionCard(version: VersionUi) {
     Box(Modifier.clickable { }) {
         ConstraintLayout(
             Modifier
@@ -55,7 +55,7 @@ fun VersionCard(version: VersionUi, viewModel: VersionViewModel) {
                 top.linkTo(menu.bottom)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
-            }, viewModel)
+            })
         }
     }
 }

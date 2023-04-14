@@ -13,30 +13,29 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.fcitx.fcitx5.android.updater.VersionViewModel
 import org.fcitx.fcitx5.android.updater.R
 import org.fcitx.fcitx5.android.updater.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.VersionUi
+import org.fcitx.fcitx5.android.updater.VersionViewModel
 
 @Composable
 fun VersionCardAction(
     version: VersionUi,
-    modifier: Modifier,
-    viewModel: VersionViewModel
+    modifier: Modifier
 ) {
     when (version) {
-        is VersionUi.Installed -> VersionCardActionInstalled(version, modifier, viewModel)
-        is VersionUi.Local -> VersionCardActionLocal(version, modifier, viewModel)
-        is VersionUi.Remote -> VersionCardActionRemote(version, modifier, viewModel)
+        is VersionUi.Installed -> VersionCardActionInstalled(version, modifier)
+        is VersionUi.Local -> VersionCardActionLocal(version, modifier)
+        is VersionUi.Remote -> VersionCardActionRemote(version, modifier)
     }
 }
 
 @Composable
 fun VersionCardActionInstalled(
     version: VersionUi.Installed,
-    modifier: Modifier,
-    viewModel: VersionViewModel
+    modifier: Modifier
 ) {
+    val viewModel: VersionViewModel = viewModel()
     if (version.isInstalled) {
         ConstraintLayout(modifier = modifier) {
             val (action) = createRefs()
@@ -54,9 +53,10 @@ fun VersionCardActionInstalled(
 
 @Composable
 fun VersionCardActionLocal(
-    version: VersionUi.Local, modifier: Modifier,
-    viewModel: VersionViewModel
+    version: VersionUi.Local,
+    modifier: Modifier
 ) {
+    val viewModel: VersionViewModel = viewModel()
     ConstraintLayout(modifier = modifier) {
         val (action) = createRefs()
         TextButton(
@@ -73,9 +73,9 @@ fun VersionCardActionLocal(
 @Composable
 fun VersionCardActionRemote(
     version: VersionUi.Remote,
-    modifier: Modifier,
-    viewModel: VersionViewModel
+    modifier: Modifier
 ) {
+    val viewModel: VersionViewModel = viewModel()
     val state by viewModel.getRemoteUiState(version).collectAsState()
     ConstraintLayout(modifier = modifier) {
         val (button, progressText, progressBar) = createRefs()
