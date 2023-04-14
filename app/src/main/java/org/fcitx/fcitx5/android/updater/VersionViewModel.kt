@@ -7,6 +7,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,7 +20,10 @@ import org.fcitx.fcitx5.android.updater.network.DownloadTask
 import java.io.File
 import kotlin.math.pow
 
-class MainViewModel : ViewModel() {
+class VersionViewModel(
+    private val packageName: String,
+    private val jobName: String
+) : ViewModel() {
     private val _isRefreshing = MutableStateFlow(false)
 
     private val remoteVersionUiStates: MutableMap<VersionUi.Remote, MutableStateFlow<RemoteVersionUiState>> =
@@ -54,7 +60,7 @@ class MainViewModel : ViewModel() {
 
     fun uninstall() {
         viewModelScope.launch {
-            _fileOperation.emit(FileOperation.Uninstall)
+            _fileOperation.emit(FileOperation.Uninstall(packageName))
         }
     }
 
@@ -169,7 +175,8 @@ class MainViewModel : ViewModel() {
     }
 
     fun exportInstalled() {
-        val installedPath = PackageUtils.getInstalledPath(UpdaterApplication.context) ?: return
+        val installedPath =
+            PackageUtils.getInstalledPath(UpdaterApplication.context, packageName) ?: return
         viewModelScope.launch {
             _fileOperation.emit(
                 FileOperation.Export(File(installedPath), installedVersion.displayName)
@@ -182,9 +189,9 @@ class MainViewModel : ViewModel() {
     }
 
     private fun getInstalled(context: Context) =
-        PackageUtils.getInstalledVersionName(context)
+        PackageUtils.getInstalledVersionName(context, packageName)
             ?.let { version ->
-                PackageUtils.getInstalledSize(context)
+                PackageUtils.getInstalledSize(context, packageName)
                     ?.let { size ->
                         VersionUi.Installed(version, size)
                     }
@@ -205,6 +212,7 @@ class MainViewModel : ViewModel() {
             lastVersionName = installedVersion.versionName
             localVersions.clear()
             externalDir
+                .let { File(it, jobName).apply { mkdirs() } }
                 .listFiles { file: File -> file.extension == "apk" }
                 ?.mapNotNull {
                     PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
@@ -223,7 +231,7 @@ class MainViewModel : ViewModel() {
                     allVersions[it.versionName] = it
                 }
             remoteVersions.clear()
-            JenkinsApi.getAllWorkflowRuns(Const.fcitx5AndroidJenkinsJobName)
+            JenkinsApi.getAllWorkflowRuns(jobName)
                 .mapNotNull {
                     it.getOrNull()?.artifacts?.selectByABI()?.let { artifact ->
                         artifact.extractVersionName()?.let { versionName ->
@@ -249,6 +257,20 @@ class MainViewModel : ViewModel() {
                         allVersions[it.versionName] = it
                 }
             _isRefreshing.emit(false)
+        }
+    }
+
+    enum class ExtraKey : CreationExtras.Key<String> {
+        JOB_NAME, PACKAGE_NAME
+    }
+
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val jobName = this[ExtraKey.JOB_NAME]!!
+                val packageName = this[ExtraKey.PACKAGE_NAME]!!
+                VersionViewModel(packageName, jobName)
+            }
         }
     }
 

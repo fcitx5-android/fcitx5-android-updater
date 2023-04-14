@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.MutableCreationExtras
 import com.google.accompanist.insets.ui.Scaffold
 import com.google.accompanist.insets.ui.TopAppBar
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -39,7 +39,13 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: VersionViewModel by viewModels(extrasProducer = {
+        // TODO
+        MutableCreationExtras().apply {
+            this[VersionViewModel.ExtraKey.PACKAGE_NAME] = "org.fcitx.fcitx5.android"
+            this[VersionViewModel.ExtraKey.JOB_NAME] = "fcitx5-android"
+        }
+    }) { VersionViewModel.Factory }
 
     private lateinit var intentLauncher: ActivityResultLauncher<Intent>
 
@@ -72,8 +78,8 @@ class MainActivity : ComponentActivity() {
                     is FileOperation.Install -> {
                         intentLauncher.launch(PackageUtils.installIntent(it.file))
                     }
-                    FileOperation.Uninstall -> {
-                        intentLauncher.launch(PackageUtils.uninstallIntent())
+                    is FileOperation.Uninstall -> {
+                        intentLauncher.launch(PackageUtils.uninstallIntent(it.packageName))
                     }
                     is FileOperation.Share -> {
                         val shareIntent = PackageUtils.shareIntent(it.file, it.name)
@@ -95,15 +101,14 @@ class MainActivity : ComponentActivity() {
                     systemUiController.setStatusBarColor(Color.Transparent)
                     systemUiController.setNavigationBarColor(Color.Transparent, useDarkIcons)
                 }
-                Screen()
+                Screen(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun Screen() {
-    val viewModel: MainViewModel = viewModel()
+fun Screen(viewModel: VersionViewModel) {
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     Scaffold(
         modifier = Modifier
@@ -124,7 +129,8 @@ fun Screen() {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Versions(
                     stringResource(R.string.installed),
-                    listOf(viewModel.installedVersion)
+                    listOf(viewModel.installedVersion),
+                    viewModel
                 )
                 Versions(
                     stringResource(R.string.versions),
@@ -132,7 +138,8 @@ fun Screen() {
                         parseVersionNumber(it.versionName).getOrThrow().let { (a, b, _) ->
                             SemVer.parse("$a-$b")
                         }
-                    }
+                    },
+                    viewModel
                 )
                 Spacer(
                     Modifier
@@ -145,7 +152,7 @@ fun Screen() {
 }
 
 @Composable
-fun Versions(name: String, versions: List<VersionUi>) {
+fun Versions(name: String, versions: List<VersionUi>, viewModel: VersionViewModel) {
     Column {
         Text(
             text = name,
@@ -157,7 +164,7 @@ fun Versions(name: String, versions: List<VersionUi>) {
                 val last = versions.size - 1
                 val dividerColor = MaterialTheme.colors.onSurface.copy(alpha = 0.06f)
                 versions.forEachIndexed { index, version ->
-                    VersionCard(version)
+                    VersionCard(version, viewModel)
                     if (index != last) Divider(color = dividerColor)
                 }
             }

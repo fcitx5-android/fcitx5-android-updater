@@ -15,7 +15,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.fcitx.fcitx5.android.updater.MainViewModel
+import org.fcitx.fcitx5.android.updater.VersionViewModel
 import org.fcitx.fcitx5.android.updater.R
 import org.fcitx.fcitx5.android.updater.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.VersionUi
@@ -68,7 +68,7 @@ fun VersionCardMenuIcon(
 @Composable
 fun VersionCardMenuInstalled(version: VersionUi.Installed, dismissMenu: () -> Unit) {
     if (version.isInstalled) {
-        val viewModel: MainViewModel = viewModel()
+        val viewModel: VersionViewModel = viewModel()
         DropdownMenuItem(
             onClick = {
                 dismissMenu()
@@ -82,7 +82,7 @@ fun VersionCardMenuInstalled(version: VersionUi.Installed, dismissMenu: () -> Un
 
 @Composable
 fun VersionCardMenuLocal(version: VersionUi.Local, dismissMenu: () -> Unit) {
-    val viewModel: MainViewModel = viewModel()
+    val viewModel: VersionViewModel = viewModel()
     DropdownMenuItem(
         onClick = {
             dismissMenu()
@@ -123,7 +123,7 @@ fun VersionCardMenuLocal(version: VersionUi.Local, dismissMenu: () -> Unit) {
 
 @Composable
 fun VersionCardMenuRemote(version: VersionUi.Remote, dismissMenu: () -> Unit) {
-    val viewModel: MainViewModel = viewModel()
+    val viewModel: VersionViewModel = viewModel()
     val state by viewModel.getRemoteUiState(version).collectAsState()
     when (state) {
         RemoteVersionUiState.Downloaded -> {

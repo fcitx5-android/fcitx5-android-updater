@@ -15,9 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import org.fcitx.fcitx5.android.updater.VersionUi
+import org.fcitx.fcitx5.android.updater.VersionViewModel
 
 @Composable
-fun VersionCard(version: VersionUi) {
+fun VersionCard(version: VersionUi, viewModel: VersionViewModel) {
     Box(Modifier.clickable { }) {
         ConstraintLayout(
             Modifier
@@ -37,10 +38,12 @@ fun VersionCard(version: VersionUi) {
                 Text(
                     text = String.format("%.2f MiB", version.size),
                     style = MaterialTheme.typography.body2,
-                    modifier = Modifier.padding(bottom = 8.dp).constrainAs(size) {
-                        top.linkTo(title.bottom, 4.dp)
-                        start.linkTo(parent.start)
-                    }
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .constrainAs(size) {
+                            top.linkTo(title.bottom, 4.dp)
+                            start.linkTo(parent.start)
+                        }
                 )
             }
             VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
@@ -52,7 +55,7 @@ fun VersionCard(version: VersionUi) {
                 top.linkTo(menu.bottom)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
-            })
+            }, viewModel)
         }
     }
 }

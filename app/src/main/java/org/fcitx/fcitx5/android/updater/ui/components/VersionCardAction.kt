@@ -13,24 +13,31 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.fcitx.fcitx5.android.updater.MainViewModel
+import org.fcitx.fcitx5.android.updater.VersionViewModel
 import org.fcitx.fcitx5.android.updater.R
 import org.fcitx.fcitx5.android.updater.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.VersionUi
 
 @Composable
-fun VersionCardAction(version: VersionUi, modifier: Modifier) {
+fun VersionCardAction(
+    version: VersionUi,
+    modifier: Modifier,
+    viewModel: VersionViewModel
+) {
     when (version) {
-        is VersionUi.Installed -> VersionCardActionInstalled(version, modifier)
-        is VersionUi.Local -> VersionCardActionLocal(version, modifier)
-        is VersionUi.Remote -> VersionCardActionRemote(version, modifier)
+        is VersionUi.Installed -> VersionCardActionInstalled(version, modifier, viewModel)
+        is VersionUi.Local -> VersionCardActionLocal(version, modifier, viewModel)
+        is VersionUi.Remote -> VersionCardActionRemote(version, modifier, viewModel)
     }
 }
 
 @Composable
-fun VersionCardActionInstalled(version: VersionUi.Installed, modifier: Modifier) {
+fun VersionCardActionInstalled(
+    version: VersionUi.Installed,
+    modifier: Modifier,
+    viewModel: VersionViewModel
+) {
     if (version.isInstalled) {
-        val viewModel: MainViewModel = viewModel()
         ConstraintLayout(modifier = modifier) {
             val (action) = createRefs()
             TextButton(
@@ -46,8 +53,10 @@ fun VersionCardActionInstalled(version: VersionUi.Installed, modifier: Modifier)
 }
 
 @Composable
-fun VersionCardActionLocal(version: VersionUi.Local, modifier: Modifier) {
-    val viewModel: MainViewModel = viewModel()
+fun VersionCardActionLocal(
+    version: VersionUi.Local, modifier: Modifier,
+    viewModel: VersionViewModel
+) {
     ConstraintLayout(modifier = modifier) {
         val (action) = createRefs()
         TextButton(
@@ -62,16 +71,21 @@ fun VersionCardActionLocal(version: VersionUi.Local, modifier: Modifier) {
 }
 
 @Composable
-fun VersionCardActionRemote(version: VersionUi.Remote, modifier: Modifier) {
-    val viewModel: MainViewModel = viewModel()
+fun VersionCardActionRemote(
+    version: VersionUi.Remote,
+    modifier: Modifier,
+    viewModel: VersionViewModel
+) {
     val state by viewModel.getRemoteUiState(version).collectAsState()
     ConstraintLayout(modifier = modifier) {
         val (button, progressText, progressBar) = createRefs()
-        val buttonModifier = Modifier.defaultMinSize(minWidth = 72.dp).constrainAs(button) {
-            top.linkTo(parent.top)
-            end.linkTo(parent.end)
-            bottom.linkTo(parent.bottom)
-        }
+        val buttonModifier = Modifier
+            .defaultMinSize(minWidth = 72.dp)
+            .constrainAs(button) {
+                top.linkTo(parent.top)
+                end.linkTo(parent.end)
+                bottom.linkTo(parent.bottom)
+            }
         val progressTextModifier = Modifier.constrainAs(progressText) {
             width = Dimension.value(36.dp)
             top.linkTo(parent.top)

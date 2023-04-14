@@ -23,7 +23,7 @@ object PackageUtils {
 
     fun getInstalledVersionName(
         context: Context,
-        packageName: String = Const.fcitx5AndroidPackageName
+        packageName: String
     ) = context.packageManager.runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -35,7 +35,7 @@ object PackageUtils {
 
     fun getInstalledPath(
         context: Context,
-        packageName: String = Const.fcitx5AndroidPackageName
+        packageName: String
     ) = context.packageManager.runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0L))
@@ -47,7 +47,7 @@ object PackageUtils {
 
     fun getInstalledSize(
         context: Context,
-        packageName: String = Const.fcitx5AndroidPackageName
+        packageName: String
     ) = getInstalledPath(context, packageName)?.let { path ->
         File(path)
             .length()
@@ -69,7 +69,7 @@ object PackageUtils {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-    fun uninstallIntent(packageName: String = Const.fcitx5AndroidPackageName) =
+    fun uninstallIntent(packageName: String) =
         Intent(Intent.ACTION_DELETE).apply {
             data = Uri.parse("package:$packageName")
         }
