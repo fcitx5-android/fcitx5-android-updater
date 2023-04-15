@@ -8,28 +8,69 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.ListItem
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.primarySurface
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material.rememberScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.insets.ui.Scaffold
 import com.google.accompanist.insets.ui.TopAppBar
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -42,8 +83,7 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
 
-
-    private val viewModels = mutableMapOf<String, VersionViewModel>()
+    private val viewModel: MainViewModel by viewModels()
 
     private lateinit var intentLauncher: ActivityResultLauncher<Intent>
 
@@ -54,7 +94,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         intentLauncher = registerForActivityResult(StartActivityForResult()) {
-            viewModels.forEach { it.value.refreshIfInstalledChanged() }
+            viewModel.versions.value.forEach { it.value.refreshIfInstalledChanged() }
         }
         exportLauncher = registerForActivityResult(CreateDocument(Const.apkMineType)) {
             it?.let { uri ->
@@ -68,14 +108,27 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
+            val systemUiController = rememberSystemUiController()
             Fcitx5ForAndroidUpdaterTheme {
-                SplashScreen()
+                val useDarkIcons = MaterialTheme.colors.isLight
+                SideEffect {
+                    systemUiController.setStatusBarColor(Color.Transparent)
+                    systemUiController.setNavigationBarColor(Color.Transparent, useDarkIcons)
+                }
+                val loaded by viewModel.loaded.collectAsState()
+                val versions by viewModel.versions.collectAsState()
+                MainScreen(versions) { pv, nc, v ->
+                    if (loaded) NavScreen(paddingValues = pv, navController = nc, viewModels = v)
+                    else LoadingScreen()
+                }
             }
         }
 
+        if (viewModel.loaded.value) return
         lifecycleScope.launch {
+            val loadedVersions = sortedMapOf<String, VersionViewModel>()
             val androidJobs = JenkinsApi.getAllAndroidJobs()
-            androidJobs.forEach { job ->
+            androidJobs.sortedBy { it.jobName }.forEach { job ->
                 val viewModel = VersionViewModel(job)
                 viewModel.toastMessage.onEach {
                     Toast.makeText(this@MainActivity, "${job.jobName}: $it", Toast.LENGTH_SHORT)
@@ -100,29 +153,22 @@ class MainActivity : ComponentActivity() {
                         // TODO: share installed apk with FileProvider
                     }
                 }.launchIn(this)
-                viewModels[job.jobName] = viewModel
+                loadedVersions[job.jobName] = viewModel
             }
-            setContent {
-                val systemUiController = rememberSystemUiController()
-                Fcitx5ForAndroidUpdaterTheme {
-                    val useDarkIcons = MaterialTheme.colors.isLight
-                    SideEffect {
-                        systemUiController.setStatusBarColor(Color.Transparent)
-                        systemUiController.setNavigationBarColor(
-                            Color.Transparent,
-                            useDarkIcons
-                        )
-                    }
-                    MainScreen(viewModels)
-                }
-            }
+            viewModel.versions.value = loadedVersions
+            viewModel.loaded.value = true
         }
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun MainScreen(viewModels: Map<String, VersionViewModel>) {
+fun MainScreen(
+    viewModels: Map<String, VersionViewModel>,
+    content: @Composable (PaddingValues, NavHostController, viewModels: Map<String, VersionViewModel>) -> Unit
+) {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
     Scaffold(
@@ -135,88 +181,108 @@ fun MainScreen(viewModels: Map<String, VersionViewModel>) {
                 backgroundColor = MaterialTheme.colors.primarySurface,
                 contentPadding = WindowInsets.statusBars.asPaddingValues(),
                 navigationIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = "Drawer Icon",
-                        Modifier.clickable {
-                            scope.launch {
-                                scaffoldState.drawerState.open()
-                            }
-                        }
-                    )
+                    IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
+                        Icon(imageVector = Icons.Default.Menu, contentDescription = null)
+                    }
                 }
             )
         },
         drawerContent = {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(60.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                viewModels.forEach { (jobName, _) ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                scope.launch {
-                                    scaffoldState.drawerState.close()
-                                }
-                                navController.navigate(jobName)
-                            },
-                        elevation = 0.dp,
-                    ) {
-                        Text(text = jobName)
-                    }
+                    .fillMaxWidth()
+                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                    .background(Color.Black.copy(alpha = 0.3f))
+            )
+            viewModels.forEach { (jobName, _) ->
+                val selected = navBackStackEntry?.destination?.route == jobName
+                val color =
+                    if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
+                val icon = when (jobName) {
+                    "fcitx5-android" -> Icons.Default.Keyboard
+                    "fcitx5-android-updater" -> Icons.Default.SystemUpdate
+                    else -> Icons.Default.Extension
                 }
+                ListItem(
+                    modifier = Modifier.clickable {
+                        scope.launch {
+                            scaffoldState.drawerState.close()
+                        }
+                        navController.navigate(jobName) {
+                            // clear navigation stack before navigation
+                            popUpTo(0)
+                        }
+                    },
+                    icon = { Icon(imageVector = icon, contentDescription = null, tint = color) },
+                    text = {
+                        Text(
+                            text = jobName,
+                            color = color,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                )
             }
         }
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = "fcitx5-android",
-            modifier = Modifier.padding(paddingValues)
-        ) {
-            viewModels.forEach { (jobName, viewModel) ->
-                composable(jobName) {
-                    VersionScreen(viewModel)
-                }
-            }
-        }
+        content(paddingValues, navController, viewModels)
     }
 }
 
 @Composable
-fun SplashScreen() {
+fun LoadingScreen() {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.fillMaxSize()
     ) {
-        Text(text = "Loading...", style = MaterialTheme.typography.h2)
+        CircularProgressIndicator(
+            modifier = Modifier.size(64.dp),
+            strokeWidth = 5.dp,
+            strokeCap = StrokeCap.Square
+        )
     }
 }
 
+@Composable
+fun NavScreen(
+    paddingValues: PaddingValues,
+    navController: NavHostController,
+    viewModels: Map<String, VersionViewModel>
+) {
+    NavHost(
+        navController = navController,
+        startDestination = viewModels.keys.first(),
+        modifier = Modifier.padding(paddingValues)
+    ) {
+        viewModels.forEach { (jobName, viewModel) ->
+            composable(jobName) {
+                VersionScreen(viewModel)
+            }
+        }
+    }
+}
 
 val LocalVersionViewModel = compositionLocalOf<VersionViewModel> { error("No view model") }
 
 @Composable
 fun versionViewModel() = LocalVersionViewModel.current
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun VersionScreen(viewModel: VersionViewModel) {
     CompositionLocalProvider(LocalVersionViewModel provides viewModel) {
-        val isRefreshing by viewModel.isRefreshing.collectAsState()
-        SwipeRefresh(
-            state = rememberSwipeRefreshState(isRefreshing = isRefreshing),
-            onRefresh = { viewModel.refresh() }
-        ) {
+        val refreshing by viewModel.isRefreshing.collectAsState()
+        val pullRefreshState = rememberPullRefreshState(refreshing, { viewModel.refresh() })
+        Box(Modifier.pullRefresh(pullRefreshState)) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(
-                    text = viewModel.androidJob.jobName,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.h5
-                )
+                Surface(modifier = Modifier.fillMaxWidth(), elevation = 2.dp) {
+                    Text(
+                        text = viewModel.androidJob.jobName,
+                        modifier = Modifier.padding(16.dp),
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.body1
+                    )
+                }
                 Versions(
                     stringResource(R.string.installed),
                     listOf(viewModel.installedVersion)
@@ -235,6 +301,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                         .windowInsetsBottomHeight(WindowInsets.navigationBars)
                 )
             }
+            PullRefreshIndicator(refreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
         }
     }
 }
