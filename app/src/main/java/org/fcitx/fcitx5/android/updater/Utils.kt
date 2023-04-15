@@ -33,7 +33,13 @@ suspend fun <A, B> Iterable<A>.parallelMap(f: suspend (A) -> B): List<B> = corou
 }
 
 fun List<Artifact>.selectByABI() =
-    find { it.fileName.endsWith(".apk") && it.fileName.contains(Const.deviceABI) }
+    filter { it.fileName.endsWith(".apk") }.let { apks ->
+        if (apks.size == 1)
+            apks.first()
+        else
+            apks.find { it.fileName.contains(Const.deviceABI) }
+    }
+
 
 fun Artifact.extractVersionName() = artifactNameRegex.find(fileName)?.let {
     val groups = it.groupValues
