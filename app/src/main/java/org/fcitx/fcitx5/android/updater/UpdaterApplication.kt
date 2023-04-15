@@ -7,6 +7,15 @@ class UpdaterApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        migrateOldDownloads()
+    }
+
+    private fun migrateOldDownloads() {
+        val appDownloadDir = externalDir.resolve("fcitx5-android")
+        externalDir.listFiles { _, name -> name.endsWith(".apk") }
+            ?.forEach {
+                it.renameTo(appDownloadDir.resolve(it.name))
+            }
     }
 
     companion object {
