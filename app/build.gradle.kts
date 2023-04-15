@@ -1,7 +1,17 @@
+import java.io.ByteArrayOutputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("kotlin-parcelize")
+}
+
+fun exec(cmd: String): String = ByteArrayOutputStream().use {
+    project.exec {
+        commandLine = cmd.split(" ")
+        standardOutput = it
+    }
+    it.toString().trim()
 }
 
 android {
@@ -13,7 +23,8 @@ android {
         minSdk = 23
         targetSdk = 33
         versionCode = 1
-        versionName = "1.0"
+        versionName = exec("git describe --tags --long --always")
+        setProperty("archivesBaseName", "$applicationId-$versionName")
 
         vectorDrawables {
             useSupportLibrary = true
