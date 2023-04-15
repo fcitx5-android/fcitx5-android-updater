@@ -12,8 +12,11 @@ sealed interface VersionUi : Parcelable {
 
     val isInstalled: Boolean
 
+    val pkgName: String
+
     @Parcelize
     data class Installed(
+        override val pkgName: String,
         override val versionName: String,
         override val size: Double,
         override val isInstalled: Boolean = true,
@@ -21,24 +24,26 @@ sealed interface VersionUi : Parcelable {
 
     @Parcelize
     data class Remote(
+        override val pkgName: String,
         override val versionName: String,
         override val size: Double,
         override val isInstalled: Boolean,
-        val downloadUrl: String
+        val downloadUrl: String,
     ) : VersionUi
 
     @Parcelize
     data class Local(
+        override val pkgName: String,
         override val versionName: String,
         override val size: Double,
         override val isInstalled: Boolean,
-        val archiveFile: File
+        val archiveFile: File,
     ) : VersionUi
 
     val displayName: String
-        get() = "${Const.fcitx5AndroidPackageName}-$versionName-${Const.deviceABI}.apk"
+        get() = "$pkgName-$versionName-${Const.deviceABI}.apk"
 
     companion object {
-        val NotInstalled = Installed("N/A", .0, false)
+        val NotInstalled = Installed("N/A", "N/A", .0, false)
     }
 }

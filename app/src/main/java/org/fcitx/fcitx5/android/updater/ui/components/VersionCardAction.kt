@@ -13,10 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.fcitx.fcitx5.android.updater.*
 import org.fcitx.fcitx5.android.updater.R
-import org.fcitx.fcitx5.android.updater.RemoteVersionUiState
-import org.fcitx.fcitx5.android.updater.VersionUi
-import org.fcitx.fcitx5.android.updater.VersionViewModel
 
 @Composable
 fun VersionCardAction(
@@ -35,7 +33,7 @@ fun VersionCardActionInstalled(
     version: VersionUi.Installed,
     modifier: Modifier
 ) {
-    val viewModel: VersionViewModel = viewModel()
+    val viewModel: VersionViewModel = versionViewModel()
     if (version.isInstalled) {
         ConstraintLayout(modifier = modifier) {
             val (action) = createRefs()
@@ -56,7 +54,7 @@ fun VersionCardActionLocal(
     version: VersionUi.Local,
     modifier: Modifier
 ) {
-    val viewModel: VersionViewModel = viewModel()
+    val viewModel: VersionViewModel = versionViewModel()
     ConstraintLayout(modifier = modifier) {
         val (action) = createRefs()
         TextButton(
@@ -75,7 +73,7 @@ fun VersionCardActionRemote(
     version: VersionUi.Remote,
     modifier: Modifier
 ) {
-    val viewModel: VersionViewModel = viewModel()
+    val viewModel: VersionViewModel = versionViewModel()
     val state by viewModel.getRemoteUiState(version).collectAsState()
     ConstraintLayout(modifier = modifier) {
         val (button, progressText, progressBar) = createRefs()

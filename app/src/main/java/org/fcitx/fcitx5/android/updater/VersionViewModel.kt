@@ -7,12 +7,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.fcitx.fcitx5.android.updater.api.AndroidJob
 import org.fcitx.fcitx5.android.updater.api.CommonApi
 import org.fcitx.fcitx5.android.updater.api.JenkinsApi
 import org.fcitx.fcitx5.android.updater.network.DownloadEvent
@@ -20,10 +18,7 @@ import org.fcitx.fcitx5.android.updater.network.DownloadTask
 import java.io.File
 import kotlin.math.pow
 
-class VersionViewModel(
-    private val packageName: String,
-    private val jobName: String
-) : ViewModel() {
+class VersionViewModel(val androidJob: AndroidJob) : ViewModel() {
     private val _isRefreshing = MutableStateFlow(false)
 
     private val remoteVersionUiStates: MutableMap<VersionUi.Remote, MutableStateFlow<RemoteVersionUiState>> =
@@ -53,6 +48,10 @@ class VersionViewModel(
     private val _fileOperation = MutableSharedFlow<FileOperation>()
     val fileOperation = _fileOperation.asSharedFlow()
 
+    private val downloadDir = File(externalDir, androidJob.jobName).apply {
+        mkdirs()
+    }
+
     fun getRemoteUiState(remote: VersionUi.Remote) =
         remoteVersionUiStates.getOrPut(remote) {
             MutableStateFlow(RemoteVersionUiState.Idle(true))
@@ -60,13 +59,13 @@ class VersionViewModel(
 
     fun uninstall() {
         viewModelScope.launch {
-            _fileOperation.emit(FileOperation.Uninstall(packageName))
+            _fileOperation.emit(FileOperation.Uninstall(androidJob.pkgName))
         }
     }
 
     fun download(remote: VersionUi.Remote) {
         val flow = remoteVersionUiStates.getValue(remote)
-        val task = DownloadTask(remote.downloadUrl, File(externalDir, remote.versionName + ".apk"))
+        val task = DownloadTask(remote.downloadUrl, File(downloadDir, remote.versionName + ".apk"))
         var progress = .0f
         task.eventFlow.onEach { event ->
             when (event) {
@@ -88,6 +87,7 @@ class VersionViewModel(
                 DownloadEvent.Downloaded -> {
                     flow.emit(RemoteVersionUiState.Downloaded)
                     val local = VersionUi.Local(
+                        androidJob.pkgName,
                         remote.versionName,
                         remote.size,
                         remote.isNowInstalled,
@@ -176,7 +176,7 @@ class VersionViewModel(
 
     fun exportInstalled() {
         val installedPath =
-            PackageUtils.getInstalledPath(UpdaterApplication.context, packageName) ?: return
+            PackageUtils.getInstalledPath(UpdaterApplication.context, androidJob.pkgName) ?: return
         viewModelScope.launch {
             _fileOperation.emit(
                 FileOperation.Export(File(installedPath), installedVersion.displayName)
@@ -189,11 +189,11 @@ class VersionViewModel(
     }
 
     private fun getInstalled(context: Context) =
-        PackageUtils.getInstalledVersionName(context, packageName)
+        PackageUtils.getInstalledVersionName(context, androidJob.pkgName)
             ?.let { version ->
-                PackageUtils.getInstalledSize(context, packageName)
+                PackageUtils.getInstalledSize(context, androidJob.pkgName)
                     ?.let { size ->
-                        VersionUi.Installed(version, size)
+                        VersionUi.Installed(androidJob.pkgName, version, size)
                     }
 
             } ?: VersionUi.NotInstalled
@@ -211,13 +211,13 @@ class VersionViewModel(
             installedVersion = getInstalled(UpdaterApplication.context)
             lastVersionName = installedVersion.versionName
             localVersions.clear()
-            externalDir
-                .let { File(it, jobName).apply { mkdirs() } }
+            downloadDir
                 .listFiles { file: File -> file.extension == "apk" }
                 ?.mapNotNull {
                     PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
                         ?.let { versionName ->
                             VersionUi.Local(
+                                androidJob.pkgName,
                                 versionName,
                                 // Bytes to MiB
                                 it.length() / 2.0.pow(20),
@@ -231,9 +231,9 @@ class VersionViewModel(
                     allVersions[it.versionName] = it
                 }
             remoteVersions.clear()
-            JenkinsApi.getAllWorkflowRuns(jobName)
+            JenkinsApi.getJobBuilds(androidJob)
                 .mapNotNull {
-                    it.getOrNull()?.artifacts?.selectByABI()?.let { artifact ->
+                    it.artifacts.selectByABI()?.let { artifact ->
                         artifact.extractVersionName()?.let { versionName ->
                             artifact to versionName
                         }
@@ -241,6 +241,7 @@ class VersionViewModel(
                 }
                 .parallelMap { (artifact, versionName) ->
                     VersionUi.Remote(
+                        androidJob.pkgName,
                         versionName,
                         // Bytes to MiB
                         CommonApi.getContentLength(artifact.url)
@@ -257,20 +258,6 @@ class VersionViewModel(
                         allVersions[it.versionName] = it
                 }
             _isRefreshing.emit(false)
-        }
-    }
-
-    enum class ExtraKey : CreationExtras.Key<String> {
-        JOB_NAME, PACKAGE_NAME
-    }
-
-    companion object {
-        val Factory = viewModelFactory {
-            initializer {
-                val jobName = this[ExtraKey.JOB_NAME]!!
-                val packageName = this[ExtraKey.PACKAGE_NAME]!!
-                VersionViewModel(packageName, jobName)
-            }
         }
     }
 
