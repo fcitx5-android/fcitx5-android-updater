@@ -19,7 +19,7 @@ fun exec(cmd: String): String = ByteArrayOutputStream().use {
 android {
     namespace = "org.fcitx.fcitx5.android.updater"
     compileSdk = 33
-    buildToolsVersion = "33.0.2"
+    buildToolsVersion = "33.0.0"
     defaultConfig {
         applicationId = "org.fcitx.fcitx5.android.updater"
         minSdk = 23
