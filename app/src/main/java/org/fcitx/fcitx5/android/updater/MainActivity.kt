@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
@@ -142,6 +143,7 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
+    val scrimColor = Color.Black.copy(DrawerDefaults.ScrimOpacity)
     Scaffold(
         scaffoldState = scaffoldState,
         modifier = Modifier
@@ -158,12 +160,13 @@ fun MainScreen(
                 }
             )
         },
+        drawerScrimColor = scrimColor,
         drawerContent = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .windowInsetsTopHeight(WindowInsets.statusBars)
-                    .background(Color.Black.copy(alpha = 0.3f))
+                    .background(scrimColor)
             )
             viewModels.forEach { (jobName, _) ->
                 val selected = navBackStackEntry?.destination?.route == jobName
@@ -197,6 +200,11 @@ fun MainScreen(
         }
     ) { paddingValues ->
         content(paddingValues, navController, viewModels)
+    }
+    BackHandler(enabled = scaffoldState.drawerState.isOpen) {
+        scope.launch {
+            scaffoldState.drawerState.close()
+        }
     }
 }
 
@@ -247,29 +255,30 @@ fun VersionScreen(viewModel: VersionViewModel) {
         val urlHandler = LocalUriHandler.current
         Box(Modifier.pullRefresh(pullRefreshState)) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Surface(modifier = Modifier.fillMaxWidth(), elevation = 2.dp) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            urlHandler.openUri(viewModel.androidJob.url)
+                        },
+                    elevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.github_mark),
+                            contentDescription = "GitHub Logo",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colors.onSurface
+                        )
                         Text(
                             text = viewModel.androidJob.jobName,
-                            modifier = Modifier.padding(14.dp),
+                            modifier = Modifier.padding(start = 10.dp),
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.body1
                         )
-                        IconButton(
-                            onClick = {
-                                urlHandler.openUri(viewModel.androidJob.url)
-                            },
-                            modifier = Modifier.size(18.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    id = if (MaterialTheme.colors.isLight) R.drawable.github_mark
-                                    else R.drawable.github_mark_white
-                                ),
-                                contentDescription = "github logo"
-                            )
-                        }
-
                     }
                 }
                 Versions(
