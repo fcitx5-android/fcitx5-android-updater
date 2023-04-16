@@ -85,18 +85,19 @@ object JenkinsApi {
             }
         }
 
-    private fun getPackageNameFromDescription(description: String): Result<String> = runCatching {
-        val jObject = JSONObject(description)
-        jObject.getString("pkgName")
-    }
+    private fun getPackageNameAndUrlFromDescription(description: String): Result<Pair<String, String>> =
+        runCatching {
+            val jObject = JSONObject(description)
+            jObject.getString("pkgName") to jObject.getString("url")
+        }
 
     suspend fun getAllAndroidJobs() =
         getAndroidJobs()
             .getOrElse { emptyList() }
             .parallelMap {
                 getJobBuildNumbersAndDescription(it).flatMap { (numbers, description) ->
-                    getPackageNameFromDescription(description).flatMap { pkgName ->
-                        Result.success(AndroidJob(it, pkgName, numbers))
+                    getPackageNameAndUrlFromDescription(description).flatMap { (pkgName, url) ->
+                        Result.success(AndroidJob(it, pkgName, numbers, url))
                     }
                 }
             }
