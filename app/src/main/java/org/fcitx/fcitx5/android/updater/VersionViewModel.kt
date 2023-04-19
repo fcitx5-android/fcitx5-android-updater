@@ -8,7 +8,13 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.fcitx.fcitx5.android.updater.api.AndroidJob
 import org.fcitx.fcitx5.android.updater.api.CommonApi
@@ -18,7 +24,13 @@ import org.fcitx.fcitx5.android.updater.network.DownloadTask
 import java.io.File
 import kotlin.math.pow
 
-class VersionViewModel(val androidJob: AndroidJob) : ViewModel() {
+class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int>) : ViewModel() {
+
+    private var buildNumbers = initialBuildNumbers
+
+    var hasRefreshed = false
+        private set
+
     private val _isRefreshing = MutableStateFlow(false)
 
     private val remoteVersionUiStates: MutableMap<VersionUi.Remote, MutableStateFlow<RemoteVersionUiState>> =
@@ -185,7 +197,8 @@ class VersionViewModel(val androidJob: AndroidJob) : ViewModel() {
     }
 
     init {
-        refresh()
+        refreshInstalledVersion()
+        refreshLocalVersions()
     }
 
     private fun getInstalled(context: Context) =
@@ -203,60 +216,75 @@ class VersionViewModel(val androidJob: AndroidJob) : ViewModel() {
             refresh()
     }
 
+    private fun refreshInstalledVersion() {
+        installedVersion = getInstalled(UpdaterApplication.context)
+        lastVersionName = installedVersion.versionName
+    }
+
+    private fun refreshLocalVersions() {
+        localVersions.clear()
+        downloadDir
+            .listFiles { file: File -> file.extension == "apk" }
+            ?.mapNotNull {
+                PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
+                    ?.let { versionName ->
+                        VersionUi.Local(
+                            androidJob.pkgName,
+                            versionName,
+                            // Bytes to MiB
+                            it.length() / 2.0.pow(20),
+                            installedVersion.versionName == versionName,
+                            it
+                        )
+                    }
+            }
+            ?.forEach {
+                localVersions[it.versionName] = it
+                allVersions[it.versionName] = it
+            }
+    }
+
     fun refresh() {
         if (isRefreshing.value)
             return
         viewModelScope.launch {
             _isRefreshing.emit(true)
-            installedVersion = getInstalled(UpdaterApplication.context)
-            lastVersionName = installedVersion.versionName
-            localVersions.clear()
-            downloadDir
-                .listFiles { file: File -> file.extension == "apk" }
-                ?.mapNotNull {
-                    PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
-                        ?.let { versionName ->
-                            VersionUi.Local(
-                                androidJob.pkgName,
-                                versionName,
-                                // Bytes to MiB
-                                it.length() / 2.0.pow(20),
-                                installedVersion.versionName == versionName,
-                                it
-                            )
-                        }
-                }
-                ?.forEach {
-                    localVersions[it.versionName] = it
-                    allVersions[it.versionName] = it
-                }
             remoteVersions.clear()
-            JenkinsApi.getJobBuilds(androidJob)
-                .mapNotNull {
-                    it.artifacts.selectByABI()?.let { artifact ->
-                        artifact.extractVersionName()?.let { versionName ->
-                            artifact to versionName
-                        }
+            if (hasRefreshed) {
+                JenkinsApi.getJobBuilds(androidJob).also {
+                    buildNumbers = it.map { b -> b.buildNumber }
+                }
+            } else {
+                JenkinsApi.getJobBuildsByBuildNumbers(androidJob, buildNumbers).also {
+                    hasRefreshed = true
+                }
+            }.mapNotNull {
+                it.artifacts.selectByABI()?.let { artifact ->
+                    artifact.extractVersionName()?.let { versionName ->
+                        artifact to versionName
                     }
                 }
-                .parallelMap { (artifact, versionName) ->
-                    VersionUi.Remote(
-                        androidJob.pkgName,
-                        versionName,
-                        // Bytes to MiB
-                        CommonApi.getContentLength(artifact.url)
-                            .getOrNull()
-                            ?.let { it / 2.0.pow(20) }
-                            ?: .0,
-                        versionName == installedVersion.versionName,
-                        artifact.url
-                    )
-                }
-                .forEach {
-                    remoteVersions[it.versionName] = it
-                    if (it.versionName !in localVersions)
-                        allVersions[it.versionName] = it
-                }
+            }.parallelMap { (artifact, versionName) ->
+                VersionUi.Remote(
+                    androidJob.pkgName,
+                    versionName,
+                    // Bytes to MiB
+                    CommonApi.getContentLength(artifact.url)
+                        .getOrNull()
+                        ?.let { it / 2.0.pow(20) }
+                        ?: .0,
+                    versionName == installedVersion.versionName,
+                    artifact.url
+                )
+            }.also {
+                allVersions.clear()
+                refreshInstalledVersion()
+                refreshLocalVersions()
+            }.forEach {
+                remoteVersions[it.versionName] = it
+                if (it.versionName !in localVersions)
+                    allVersions[it.versionName] = it
+            }
             _isRefreshing.emit(false)
         }
     }

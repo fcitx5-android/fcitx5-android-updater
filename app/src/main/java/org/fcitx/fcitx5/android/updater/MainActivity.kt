@@ -100,8 +100,8 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val loadedVersions = sortedMapOf<String, VersionViewModel>()
             val androidJobs = JenkinsApi.getAllAndroidJobs()
-            androidJobs.sortedBy { it.jobName }.forEach { job ->
-                val viewModel = VersionViewModel(job)
+            androidJobs.forEach { (job, buildNumbers) ->
+                val viewModel = VersionViewModel(job, buildNumbers)
                 viewModel.toastMessage.onEach {
                     Toast.makeText(this@MainActivity, "${job.jobName}: $it", Toast.LENGTH_SHORT)
                         .show()
@@ -250,6 +250,11 @@ fun versionViewModel() = LocalVersionViewModel.current
 @Composable
 fun VersionScreen(viewModel: VersionViewModel) {
     CompositionLocalProvider(LocalVersionViewModel provides viewModel) {
+        LaunchedEffect(viewModel) {
+            if (!viewModel.hasRefreshed) {
+                viewModel.refresh()
+            }
+        }
         val refreshing by viewModel.isRefreshing.collectAsState()
         val pullRefreshState = rememberPullRefreshState(refreshing, { viewModel.refresh() })
         val urlHandler = LocalUriHandler.current

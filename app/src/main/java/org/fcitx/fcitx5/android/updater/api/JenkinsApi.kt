@@ -3,7 +3,11 @@ package org.fcitx.fcitx5.android.updater.api
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
-import org.fcitx.fcitx5.android.updater.*
+import org.fcitx.fcitx5.android.updater.await
+import org.fcitx.fcitx5.android.updater.catResults
+import org.fcitx.fcitx5.android.updater.flatMap
+import org.fcitx.fcitx5.android.updater.httpClient
+import org.fcitx.fcitx5.android.updater.parallelMap
 import org.json.JSONObject
 
 object JenkinsApi {
@@ -97,14 +101,22 @@ object JenkinsApi {
             .parallelMap {
                 getJobBuildNumbersAndDescription(it).flatMap { (numbers, description) ->
                     getPackageNameAndUrlFromDescription(description).flatMap { (pkgName, url) ->
-                        Result.success(AndroidJob(it, pkgName, numbers, url))
+                        Result.success(AndroidJob(it, pkgName, url) to numbers)
                     }
                 }
             }
             .catResults()
+            .associate { it }
+            .toSortedMap { a, b -> a.jobName.compareTo(b.jobName) }
 
-    suspend fun getJobBuilds(job: AndroidJob) =
-        job.buildNumbers
+    suspend fun getJobBuildsByBuildNumbers(job: AndroidJob, buildNumbers: List<Int>) =
+        buildNumbers
             .parallelMap { getJobBuild(job.jobName, it) }
             .catResults()
+
+    suspend fun getJobBuilds(job: AndroidJob) =
+        getJobBuildNumbersAndDescription(job.jobName)
+            .getOrNull()
+            ?.let { getJobBuildsByBuildNumbers(job, it.first) }
+            ?: emptyList()
 }
