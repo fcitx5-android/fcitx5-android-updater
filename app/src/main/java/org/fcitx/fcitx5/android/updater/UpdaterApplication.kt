@@ -11,11 +11,11 @@ class UpdaterApplication : Application() {
     }
 
     private fun migrateOldDownloads() {
+        val apks = externalDir.listFiles { _, name -> name.endsWith(".apk") } ?: return
         val appDownloadDir = externalDir.resolve("fcitx5-android")
-        externalDir.listFiles { _, name -> name.endsWith(".apk") }
-            ?.forEach {
-                it.renameTo(appDownloadDir.resolve(it.name))
-            }
+        apks.forEach {
+            it.renameTo(appDownloadDir.resolve(it.name))
+        }
     }
 
     companion object {
