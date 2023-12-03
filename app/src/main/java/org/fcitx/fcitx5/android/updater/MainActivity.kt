@@ -190,7 +190,7 @@ fun MainScreen(
                     icon = { Icon(imageVector = icon, contentDescription = null, tint = color) },
                     text = {
                         Text(
-                            text = jobName,
+                            text = jobName.removePrefix("fcitx5-android-"),
                             color = color,
                             fontWeight = FontWeight.SemiBold,
                         )
