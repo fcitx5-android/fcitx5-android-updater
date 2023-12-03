@@ -16,7 +16,6 @@ object PackageUtils {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 getPackageArchiveInfo(apkFilePath, PackageManager.PackageInfoFlags.of(0))
             } else {
-                @Suppress("DEPRECATION")
                 getPackageArchiveInfo(apkFilePath, 0)
             }?.versionName
         }
@@ -28,7 +27,6 @@ object PackageUtils {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
         } else {
-            @Suppress("DEPRECATION")
             getPackageInfo(packageName, 0)
         }.versionName
     }.getOrNull()
@@ -40,8 +38,7 @@ object PackageUtils {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0L))
         } else {
-            @Suppress("DEPRECATION")
-            context.packageManager.getApplicationInfo(packageName, 0)
+            getApplicationInfo(packageName, 0)
         }.publicSourceDir
     }.getOrNull()
 
