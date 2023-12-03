@@ -12,19 +12,53 @@ import androidx.activity.result.contract.ActivityResultContracts.StartActivityFo
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.DrawerDefaults
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.ListItem
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.primarySurface
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.runtime.*
+import androidx.compose.material.rememberScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,21 +96,61 @@ class MainActivity : ComponentActivity() {
     private lateinit var exportLauncher: ActivityResultLauncher<String>
     private lateinit var exportFile: File
 
+    private fun toast(msg: String, duration: Int = Toast.LENGTH_SHORT) {
+        Toast.makeText(this, msg, duration).show()
+    }
+
+    private fun handleFileOperation(it: FileOperation) {
+        when (it) {
+            is FileOperation.Install -> {
+                intentLauncher.launch(PackageUtils.installIntent(it.file))
+            }
+            is FileOperation.Uninstall -> {
+                intentLauncher.launch(PackageUtils.uninstallIntent(it.packageName))
+            }
+            is FileOperation.Share -> {
+                val shareIntent = PackageUtils.shareIntent(it.file, it.name)
+                startActivity(Intent.createChooser(shareIntent, it.name))
+            }
+            is FileOperation.Export -> {
+                exportFile = it.file
+                exportLauncher.launch(it.name)
+            }
+            // TODO: share installed apk with FileProvider
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         intentLauncher = registerForActivityResult(StartActivityForResult()) {
-            viewModel.versions.value.forEach { it.value.refreshIfInstalledChanged() }
+            viewModel.versions.value.forEach {
+                it.value.refreshIfInstalledChanged()
+            }
         }
         exportLauncher = registerForActivityResult(CreateDocument(Const.apkMineType)) {
-            it?.let { uri ->
-                lifecycleScope.launch {
-                    contentResolver.openOutputStream(uri)?.use { o ->
-                        exportFile.inputStream().use { i ->
-                            i.copyTo(o)
-                        }
-                    }
+            val uri = it ?: return@registerForActivityResult
+            lifecycleScope.launch {
+                contentResolver.openOutputStream(uri)?.use { o ->
+                    exportFile.inputStream().use { i -> i.copyTo(o) }
                 }
+            }
+        }
+        lifecycleScope.launch {
+            val loadedVersions: Map<String, VersionViewModel>
+            if (viewModel.loaded.value) {
+                loadedVersions = viewModel.versions.value
+            } else {
+                loadedVersions = sortedMapOf<String, VersionViewModel>()
+                JenkinsApi.getAllAndroidJobs().forEach { (job, buildNumbers) ->
+                    loadedVersions[job.jobName] = VersionViewModel(job, buildNumbers)
+                }
+                viewModel.versions.value = loadedVersions
+                viewModel.loaded.value = true
+            }
+            loadedVersions.forEach { (jobName, vvm) ->
+                vvm.toastMessage.onEach { toast("$jobName: $it") }.launchIn(this)
+                vvm.fileOperation.onEach { handleFileOperation(it) }.launchIn(this)
             }
         }
         setContent {
@@ -94,41 +168,6 @@ class MainActivity : ComponentActivity() {
                     else LoadingScreen()
                 }
             }
-        }
-
-        if (viewModel.loaded.value) return
-        lifecycleScope.launch {
-            val loadedVersions = sortedMapOf<String, VersionViewModel>()
-            val androidJobs = JenkinsApi.getAllAndroidJobs()
-            androidJobs.forEach { (job, buildNumbers) ->
-                val viewModel = VersionViewModel(job, buildNumbers)
-                viewModel.toastMessage.onEach {
-                    Toast.makeText(this@MainActivity, "${job.jobName}: $it", Toast.LENGTH_SHORT)
-                        .show()
-                }.launchIn(this)
-                viewModel.fileOperation.onEach {
-                    when (it) {
-                        is FileOperation.Install -> {
-                            intentLauncher.launch(PackageUtils.installIntent(it.file))
-                        }
-                        is FileOperation.Uninstall -> {
-                            intentLauncher.launch(PackageUtils.uninstallIntent(it.packageName))
-                        }
-                        is FileOperation.Share -> {
-                            val shareIntent = PackageUtils.shareIntent(it.file, it.name)
-                            startActivity(Intent.createChooser(shareIntent, it.name))
-                        }
-                        is FileOperation.Export -> {
-                            exportFile = it.file
-                            exportLauncher.launch(it.name)
-                        }
-                        // TODO: share installed apk with FileProvider
-                    }
-                }.launchIn(this)
-                loadedVersions[job.jobName] = viewModel
-            }
-            viewModel.versions.value = loadedVersions
-            viewModel.loaded.value = true
         }
     }
 }
