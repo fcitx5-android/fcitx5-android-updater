@@ -47,12 +47,12 @@ abstract class VersionViewModel(
     val isRefreshing: StateFlow<Boolean>
         get() = _isRefreshing.asStateFlow()
 
-    var installedVersion by mutableStateOf(VersionUi.NotInstalled)
+    var installedVersion = VersionUi.NotInstalled
         private set
     protected val remoteVersions = mutableMapOf<String, VersionUi.Remote>()
     protected val localVersions = mutableMapOf<String, VersionUi.Local>()
 
-    protected val allVersions = mutableStateMapOf<String, VersionUi>()
+    protected val allVersions = mutableMapOf<String, VersionUi>()
 
     private val VersionUi.isNowInstalled
         get() = installedVersion.versionName == versionName
