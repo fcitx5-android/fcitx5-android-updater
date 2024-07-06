@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -32,6 +31,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DrawerDefaults
 import androidx.compose.material.ExperimentalMaterialApi
@@ -39,8 +39,10 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.ListItem
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Keyboard
@@ -63,6 +65,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -75,14 +78,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.google.accompanist.insets.ui.Scaffold
-import com.google.accompanist.insets.ui.TopAppBar
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import net.swiftzer.semver.SemVer
+import org.fcitx.fcitx5.android.updater.api.FDroidApi
 import org.fcitx.fcitx5.android.updater.api.JenkinsApi
+import org.fcitx.fcitx5.android.updater.model.FDroidVersionViewModel
+import org.fcitx.fcitx5.android.updater.model.JenkinsVersionViewModel
+import org.fcitx.fcitx5.android.updater.model.MainViewModel
+import org.fcitx.fcitx5.android.updater.model.VersionViewModel
 import org.fcitx.fcitx5.android.updater.ui.components.Versions
 import org.fcitx.fcitx5.android.updater.ui.theme.Fcitx5ForAndroidUpdaterTheme
 import java.io.File
@@ -143,7 +147,12 @@ class MainActivity : ComponentActivity() {
             } else {
                 loadedVersions = sortedMapOf<String, VersionViewModel>()
                 JenkinsApi.getAllAndroidJobs().forEach { (job, buildNumbers) ->
-                    loadedVersions[job.jobName] = VersionViewModel(job, buildNumbers)
+                    val model = JenkinsVersionViewModel(job, buildNumbers)
+                    loadedVersions[model.name] = model
+                }
+                FDroidApi.getAllPackages().forEach {
+                    val model = FDroidVersionViewModel(it)
+                    loadedVersions[model.name] = model
                 }
                 viewModel.versions.value = loadedVersions
                 viewModel.loaded.value = true
@@ -154,12 +163,14 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
-            val systemUiController = rememberSystemUiController()
             Fcitx5ForAndroidUpdaterTheme {
-                val useDarkIcons = MaterialTheme.colors.isLight
+                val isLight = MaterialTheme.colors.isLight
                 SideEffect {
-                    systemUiController.setStatusBarColor(Color.Transparent)
-                    systemUiController.setNavigationBarColor(Color.Transparent, useDarkIcons)
+                    window.statusBarColor = Color.Transparent.toArgb()
+                    window.navigationBarColor = Color.Transparent.toArgb()
+                    val controller = WindowCompat.getInsetsController(window, window.decorView)
+                    controller.isAppearanceLightStatusBars = isLight
+                    controller.isAppearanceLightNavigationBars = isLight
                 }
                 val loaded by viewModel.loaded.collectAsState()
                 val versions by viewModel.versions.collectAsState()
@@ -191,7 +202,7 @@ fun MainScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 backgroundColor = MaterialTheme.colors.primarySurface,
-                contentPadding = WindowInsets.statusBars.asPaddingValues(),
+                windowInsets = AppBarDefaults.topAppBarWindowInsets,
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
                         Icon(imageVector = Icons.Default.Menu, contentDescription = null)
@@ -207,11 +218,11 @@ fun MainScreen(
                     .windowInsetsTopHeight(WindowInsets.statusBars)
                     .background(scrimColor)
             )
-            viewModels.forEach { (jobName, _) ->
-                val selected = navBackStackEntry?.destination?.route == jobName
+            viewModels.forEach { (name, _) ->
+                val selected = navBackStackEntry?.destination?.route == name
                 val color =
                     if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
-                val icon = when (jobName) {
+                val icon = when (name) {
                     "fcitx5-android" -> Icons.Default.Keyboard
                     "fcitx5-android-updater" -> Icons.Default.SystemUpdate
                     else -> Icons.Default.Extension
@@ -221,7 +232,7 @@ fun MainScreen(
                         scope.launch {
                             scaffoldState.drawerState.close()
                         }
-                        navController.navigate(jobName) {
+                        navController.navigate(name) {
                             // clear navigation stack before navigation
                             popUpTo(0)
                         }
@@ -229,7 +240,7 @@ fun MainScreen(
                     icon = { Icon(imageVector = icon, contentDescription = null, tint = color) },
                     text = {
                         Text(
-                            text = jobName.removePrefix("fcitx5-android-"),
+                            text = name.removePrefix("fcitx5-android-"),
                             color = color,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -303,7 +314,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            urlHandler.openUri(viewModel.androidJob.url)
+                            urlHandler.openUri(viewModel.url)
                         },
                     elevation = 2.dp
                 ) {
@@ -318,7 +329,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                             tint = MaterialTheme.colors.onSurface
                         )
                         Text(
-                            text = viewModel.androidJob.jobName,
+                            text = viewModel.name,
                             modifier = Modifier.padding(start = 10.dp),
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.body1
@@ -331,11 +342,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                 )
                 Versions(
                     stringResource(R.string.versions),
-                    viewModel.allVersions.values.sortedByDescending {
-                        parseVersionNumber(it.versionName).getOrThrow().let { (a, b, _) ->
-                            SemVer.parse("$a-$b")
-                        }
-                    }
+                    viewModel.sortedVersions
                 )
                 Spacer(
                     Modifier

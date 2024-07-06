@@ -1,7 +1,7 @@
 package org.fcitx.fcitx5.android.updater.api
 
-data class Artifact(
+data class FDroidArtifact(
+    val size: Double,
     val fileName: String,
-    val relativePath: String,
     val url: String
 )

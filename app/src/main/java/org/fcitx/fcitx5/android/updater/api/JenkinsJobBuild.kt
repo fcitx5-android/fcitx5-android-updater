@@ -1,8 +1,8 @@
 package org.fcitx.fcitx5.android.updater.api
 
-data class JobBuild(
+data class JenkinsJobBuild(
     val jobName: String,
     val buildNumber: Int,
     val revision: String,
-    val artifacts: List<Artifact>
+    val artifacts: List<JenkinsArtifact>
 )
