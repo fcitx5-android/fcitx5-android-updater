@@ -4,8 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
@@ -56,7 +58,6 @@ import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -65,7 +66,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -162,16 +162,11 @@ class MainActivity : ComponentActivity() {
                 vvm.fileOperation.onEach { handleFileOperation(it) }.launchIn(this)
             }
         }
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(0)
+        )
         setContent {
             Fcitx5ForAndroidUpdaterTheme {
-                val isLight = MaterialTheme.colors.isLight
-                SideEffect {
-                    window.statusBarColor = Color.Transparent.toArgb()
-                    window.navigationBarColor = Color.Transparent.toArgb()
-                    val controller = WindowCompat.getInsetsController(window, window.decorView)
-                    controller.isAppearanceLightStatusBars = isLight
-                    controller.isAppearanceLightNavigationBars = isLight
-                }
                 val loaded by viewModel.loaded.collectAsState()
                 val versions by viewModel.versions.collectAsState()
                 MainScreen(versions) { pv, nc, v ->
@@ -212,40 +207,51 @@ fun MainScreen(
         },
         drawerScrimColor = scrimColor,
         drawerContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsTopHeight(WindowInsets.statusBars)
-                    .background(scrimColor)
-            )
-            viewModels.forEach { (name, _) ->
-                val selected = navBackStackEntry?.destination?.route == name
-                val color =
-                    if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
-                val icon = when (name) {
-                    "fcitx5-android" -> Icons.Default.Keyboard
-                    "fcitx5-android-updater" -> Icons.Default.SystemUpdate
-                    else -> Icons.Default.Extension
-                }
-                ListItem(
-                    modifier = Modifier.clickable {
-                        scope.launch {
-                            scaffoldState.drawerState.close()
+            Box {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .windowInsetsTopHeight(WindowInsets.statusBars)
+                        .background(scrimColor)
+                )
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+                    viewModels.forEach { (name, _) ->
+                        val selected = navBackStackEntry?.destination?.route == name
+                        val color =
+                            if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
+                        val icon = when (name) {
+                            "fcitx5-android" -> Icons.Default.Keyboard
+                            "fcitx5-android-updater" -> Icons.Default.SystemUpdate
+                            else -> Icons.Default.Extension
                         }
-                        navController.navigate(name) {
-                            // clear navigation stack before navigation
-                            popUpTo(0)
-                        }
-                    },
-                    icon = { Icon(imageVector = icon, contentDescription = null, tint = color) },
-                    text = {
-                        Text(
-                            text = name.removePrefix("fcitx5-android-"),
-                            color = color,
-                            fontWeight = FontWeight.SemiBold,
+                        ListItem(
+                            modifier = Modifier.clickable {
+                                scope.launch {
+                                    scaffoldState.drawerState.close()
+                                }
+                                navController.navigate(name) {
+                                    // clear navigation stack before navigation
+                                    popUpTo(0)
+                                }
+                            },
+                            icon = { Icon(icon, contentDescription = null, tint = color) },
+                            text = {
+                                Text(
+                                    text = name.removePrefix("fcitx5-android-"),
+                                    color = color,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
                         )
                     }
-                )
+                    Spacer(
+                        Modifier
+                            .padding(bottom = 16.dp)
+                            .windowInsetsBottomHeight(WindowInsets.navigationBars)
+                    )
+                }
             }
         }
     ) { paddingValues ->
