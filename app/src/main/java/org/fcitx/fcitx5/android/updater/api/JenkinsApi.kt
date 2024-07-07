@@ -101,7 +101,7 @@ object JenkinsApi {
             .parallelMap {
                 getJobBuildNumbersAndDescription(it).flatMap { (numbers, description) ->
                     getPackageNameAndUrlFromDescription(description).flatMap { (pkgName, url) ->
-                        Result.success(AndroidJob(it, pkgName, url) to numbers)
+                        Result.success(JenkinsAndroidJob(it, pkgName, url) to numbers)
                     }
                 }
             }
@@ -109,12 +109,12 @@ object JenkinsApi {
             .associate { it }
             .toSortedMap { a, b -> a.jobName.compareTo(b.jobName) }
 
-    suspend fun getJobBuildsByBuildNumbers(job: AndroidJob, buildNumbers: List<Int>) =
+    suspend fun getJobBuildsByBuildNumbers(job: JenkinsAndroidJob, buildNumbers: List<Int>) =
         buildNumbers
             .parallelMap { getJobBuild(job.jobName, it) }
             .catResults()
 
-    suspend fun getJobBuilds(job: AndroidJob) =
+    suspend fun getJobBuilds(job: JenkinsAndroidJob) =
         getJobBuildNumbersAndDescription(job.jobName)
             .getOrNull()
             ?.let { getJobBuildsByBuildNumbers(job, it.first) }

@@ -3,8 +3,7 @@ package org.fcitx.fcitx5.android.updater.model
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import net.swiftzer.semver.SemVer
-import org.fcitx.fcitx5.android.updater.VersionUi
-import org.fcitx.fcitx5.android.updater.api.AndroidJob
+import org.fcitx.fcitx5.android.updater.api.JenkinsAndroidJob
 import org.fcitx.fcitx5.android.updater.api.CommonApi
 import org.fcitx.fcitx5.android.updater.api.JenkinsApi
 import org.fcitx.fcitx5.android.updater.bytesToMiB
@@ -13,8 +12,8 @@ import org.fcitx.fcitx5.android.updater.parallelMap
 import org.fcitx.fcitx5.android.updater.parseVersionNumber
 import org.fcitx.fcitx5.android.updater.selectByABI
 
-class JenkinsVersionViewModel(private val androidJob: AndroidJob, initialBuildNumbers: List<Int>) :
-    VersionViewModel(androidJob.jobName, androidJob.pkgName, androidJob.url) {
+class JenkinsVersionViewModel(private val jenkinsAndroidJob: JenkinsAndroidJob, initialBuildNumbers: List<Int>) :
+    VersionViewModel(jenkinsAndroidJob.jobName, jenkinsAndroidJob.pkgName, jenkinsAndroidJob.url) {
 
     private var buildNumbers = initialBuildNumbers
 
@@ -25,11 +24,11 @@ class JenkinsVersionViewModel(private val androidJob: AndroidJob, initialBuildNu
             _isRefreshing.emit(true)
             remoteVersions.clear()
             if (hasRefreshed) {
-                JenkinsApi.getJobBuilds(androidJob).also {
+                JenkinsApi.getJobBuilds(jenkinsAndroidJob).also {
                     buildNumbers = it.map { b -> b.buildNumber }
                 }
             } else {
-                JenkinsApi.getJobBuildsByBuildNumbers(androidJob, buildNumbers).also {
+                JenkinsApi.getJobBuildsByBuildNumbers(jenkinsAndroidJob, buildNumbers).also {
                     hasRefreshed = true
                 }
             }.mapNotNull {

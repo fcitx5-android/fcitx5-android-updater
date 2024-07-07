@@ -1,10 +1,6 @@
 package org.fcitx.fcitx5.android.updater.model
 
 import android.content.Context
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -16,11 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.fcitx.fcitx5.android.updater.FileOperation
 import org.fcitx.fcitx5.android.updater.PackageUtils
-import org.fcitx.fcitx5.android.updater.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.UpdaterApplication
-import org.fcitx.fcitx5.android.updater.VersionUi
 import org.fcitx.fcitx5.android.updater.bytesToMiB
 import org.fcitx.fcitx5.android.updater.externalDir
 import org.fcitx.fcitx5.android.updater.network.DownloadEvent

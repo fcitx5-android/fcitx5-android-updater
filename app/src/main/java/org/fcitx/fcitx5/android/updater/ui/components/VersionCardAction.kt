@@ -15,6 +15,8 @@ import androidx.constraintlayout.compose.Dimension
 import org.fcitx.fcitx5.android.updater.*
 import org.fcitx.fcitx5.android.updater.R
 import org.fcitx.fcitx5.android.updater.model.VersionViewModel
+import org.fcitx.fcitx5.android.updater.model.RemoteVersionUiState
+import org.fcitx.fcitx5.android.updater.model.VersionUi
 
 @Composable
 fun VersionCardAction(

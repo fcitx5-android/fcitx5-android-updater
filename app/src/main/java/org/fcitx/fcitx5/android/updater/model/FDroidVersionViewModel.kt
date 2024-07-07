@@ -3,7 +3,6 @@ package org.fcitx.fcitx5.android.updater.model
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.fcitx.fcitx5.android.updater.Const
-import org.fcitx.fcitx5.android.updater.VersionUi
 import org.fcitx.fcitx5.android.updater.api.FDroidApi
 import org.fcitx.fcitx5.android.updater.api.FDroidPackage
 

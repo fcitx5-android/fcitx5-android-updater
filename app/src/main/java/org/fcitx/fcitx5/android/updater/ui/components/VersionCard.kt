@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import org.fcitx.fcitx5.android.updater.VersionUi
+import org.fcitx.fcitx5.android.updater.model.VersionUi
 
 @Composable
 fun VersionCard(version: VersionUi) {

@@ -84,6 +84,7 @@ import kotlinx.coroutines.launch
 import org.fcitx.fcitx5.android.updater.api.FDroidApi
 import org.fcitx.fcitx5.android.updater.api.JenkinsApi
 import org.fcitx.fcitx5.android.updater.model.FDroidVersionViewModel
+import org.fcitx.fcitx5.android.updater.model.FileOperation
 import org.fcitx.fcitx5.android.updater.model.JenkinsVersionViewModel
 import org.fcitx.fcitx5.android.updater.model.MainViewModel
 import org.fcitx.fcitx5.android.updater.model.VersionViewModel
