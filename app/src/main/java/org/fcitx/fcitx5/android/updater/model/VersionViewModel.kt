@@ -244,6 +244,5 @@ abstract class VersionViewModel(
 
     abstract fun refresh()
 
-    abstract val sortedVersions:List<VersionUi>
-
+    abstract val sortedVersions: List<VersionUi>
 }

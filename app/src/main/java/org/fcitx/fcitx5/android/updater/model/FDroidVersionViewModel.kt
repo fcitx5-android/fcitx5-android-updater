@@ -11,18 +11,18 @@ class FDroidVersionViewModel(private val pkg: FDroidPackage) : VersionViewModel(
     pkg.pkgName,
     pkg.url
 ) {
-    private val versionTimestamp = mutableMapOf<String, Long>()
+    private val versionCodeMap = mutableMapOf<String, Long>()
     override fun refresh() {
         if (isRefreshing.value)
             return
         viewModelScope.launch {
             _isRefreshing.emit(true)
             remoteVersions.clear()
-            versionTimestamp.clear()
+            versionCodeMap.clear()
             FDroidApi.getPackageVersions(pkg.pkgName)
                 .mapNotNull {
                     if (it.abi?.contains(Const.deviceABI) != false) {
-                        versionTimestamp[it.versionName] = it.added
+                        versionCodeMap[it.versionName] = it.versionCode
                         VersionUi.Remote(
                             pkgName,
                             it.versionName,
@@ -45,5 +45,5 @@ class FDroidVersionViewModel(private val pkg: FDroidPackage) : VersionViewModel(
     }
 
     override val sortedVersions: List<VersionUi>
-        get() = allVersions.values.sortedByDescending { versionTimestamp[it.versionName] }
+        get() = allVersions.values.sortedByDescending { versionCodeMap[it.versionName] }
 }

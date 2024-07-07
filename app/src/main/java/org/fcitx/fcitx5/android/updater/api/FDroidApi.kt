@@ -39,7 +39,7 @@ object FDroidApi {
     }
 
     private fun parseVersion(versionObj: JSONObject): FDroidPackage.Version {
-        val added = versionObj.getLong("added")
+        val versionCode = versionObj.getJSONObject("manifest").getLong("versionCode")
         val fileObj = versionObj.getJSONObject("file")
         // drop prefix /
         val fileName = fileObj.getString("name").drop(1)
@@ -60,7 +60,7 @@ object FDroidApi {
                 bytesToMiB(fileSize),
                 fileName,
                 "https://f5a.torus.icu/fdroid/repo/$fileName"
-            ), abiList, added
+            ), abiList, versionCode
         )
     }
 
