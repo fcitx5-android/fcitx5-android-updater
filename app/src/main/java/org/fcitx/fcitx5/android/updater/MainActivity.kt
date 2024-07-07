@@ -4,8 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DrawerDefaults
 import androidx.compose.material.ExperimentalMaterialApi
@@ -39,8 +41,10 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.ListItem
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Keyboard
@@ -54,7 +58,6 @@ import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -75,14 +78,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.google.accompanist.insets.ui.Scaffold
-import com.google.accompanist.insets.ui.TopAppBar
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import net.swiftzer.semver.SemVer
+import org.fcitx.fcitx5.android.updater.api.FDroidApi
 import org.fcitx.fcitx5.android.updater.api.JenkinsApi
+import org.fcitx.fcitx5.android.updater.model.FDroidVersionViewModel
+import org.fcitx.fcitx5.android.updater.model.FileOperation
+import org.fcitx.fcitx5.android.updater.model.JenkinsVersionViewModel
+import org.fcitx.fcitx5.android.updater.model.MainViewModel
+import org.fcitx.fcitx5.android.updater.model.VersionViewModel
 import org.fcitx.fcitx5.android.updater.ui.components.Versions
 import org.fcitx.fcitx5.android.updater.ui.theme.Fcitx5ForAndroidUpdaterTheme
 import java.io.File
@@ -143,7 +148,12 @@ class MainActivity : ComponentActivity() {
             } else {
                 loadedVersions = sortedMapOf<String, VersionViewModel>()
                 JenkinsApi.getAllAndroidJobs().forEach { (job, buildNumbers) ->
-                    loadedVersions[job.jobName] = VersionViewModel(job, buildNumbers)
+                    val model = JenkinsVersionViewModel(job, buildNumbers)
+                    loadedVersions[model.name] = model
+                }
+                FDroidApi.getAllPackages().forEach {
+                    val model = FDroidVersionViewModel(it)
+                    loadedVersions[model.name] = model
                 }
                 viewModel.versions.value = loadedVersions
                 viewModel.loaded.value = true
@@ -153,14 +163,11 @@ class MainActivity : ComponentActivity() {
                 vvm.fileOperation.onEach { handleFileOperation(it) }.launchIn(this)
             }
         }
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(0)
+        )
         setContent {
-            val systemUiController = rememberSystemUiController()
             Fcitx5ForAndroidUpdaterTheme {
-                val useDarkIcons = MaterialTheme.colors.isLight
-                SideEffect {
-                    systemUiController.setStatusBarColor(Color.Transparent)
-                    systemUiController.setNavigationBarColor(Color.Transparent, useDarkIcons)
-                }
                 val loaded by viewModel.loaded.collectAsState()
                 val versions by viewModel.versions.collectAsState()
                 MainScreen(versions) { pv, nc, v ->
@@ -191,7 +198,7 @@ fun MainScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 backgroundColor = MaterialTheme.colors.primarySurface,
-                contentPadding = WindowInsets.statusBars.asPaddingValues(),
+                windowInsets = AppBarDefaults.topAppBarWindowInsets,
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { scaffoldState.drawerState.open() } }) {
                         Icon(imageVector = Icons.Default.Menu, contentDescription = null)
@@ -201,40 +208,51 @@ fun MainScreen(
         },
         drawerScrimColor = scrimColor,
         drawerContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsTopHeight(WindowInsets.statusBars)
-                    .background(scrimColor)
-            )
-            viewModels.forEach { (jobName, _) ->
-                val selected = navBackStackEntry?.destination?.route == jobName
-                val color =
-                    if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
-                val icon = when (jobName) {
-                    "fcitx5-android" -> Icons.Default.Keyboard
-                    "fcitx5-android-updater" -> Icons.Default.SystemUpdate
-                    else -> Icons.Default.Extension
-                }
-                ListItem(
-                    modifier = Modifier.clickable {
-                        scope.launch {
-                            scaffoldState.drawerState.close()
+            Box {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .windowInsetsTopHeight(WindowInsets.statusBars)
+                        .background(scrimColor)
+                )
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+                    viewModels.forEach { (name, _) ->
+                        val selected = navBackStackEntry?.destination?.route == name
+                        val color =
+                            if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
+                        val icon = when (name) {
+                            "fcitx5-android" -> Icons.Default.Keyboard
+                            "fcitx5-android-updater" -> Icons.Default.SystemUpdate
+                            else -> Icons.Default.Extension
                         }
-                        navController.navigate(jobName) {
-                            // clear navigation stack before navigation
-                            popUpTo(0)
-                        }
-                    },
-                    icon = { Icon(imageVector = icon, contentDescription = null, tint = color) },
-                    text = {
-                        Text(
-                            text = jobName.removePrefix("fcitx5-android-"),
-                            color = color,
-                            fontWeight = FontWeight.SemiBold,
+                        ListItem(
+                            modifier = Modifier.clickable {
+                                scope.launch {
+                                    scaffoldState.drawerState.close()
+                                }
+                                navController.navigate(name) {
+                                    // clear navigation stack before navigation
+                                    popUpTo(0)
+                                }
+                            },
+                            icon = { Icon(icon, contentDescription = null, tint = color) },
+                            text = {
+                                Text(
+                                    text = name.removePrefix("fcitx5-android-"),
+                                    color = color,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
                         )
                     }
-                )
+                    Spacer(
+                        Modifier
+                            .padding(bottom = 16.dp)
+                            .windowInsetsBottomHeight(WindowInsets.navigationBars)
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -303,7 +321,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            urlHandler.openUri(viewModel.androidJob.url)
+                            urlHandler.openUri(viewModel.url)
                         },
                     elevation = 2.dp
                 ) {
@@ -318,7 +336,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                             tint = MaterialTheme.colors.onSurface
                         )
                         Text(
-                            text = viewModel.androidJob.jobName,
+                            text = viewModel.name,
                             modifier = Modifier.padding(start = 10.dp),
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.body1
@@ -331,11 +349,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                 )
                 Versions(
                     stringResource(R.string.versions),
-                    viewModel.allVersions.values.sortedByDescending {
-                        parseVersionNumber(it.versionName).getOrThrow().let { (a, b, _) ->
-                            SemVer.parse("$a-$b")
-                        }
-                    }
+                    viewModel.sortedVersions
                 )
                 Spacer(
                     Modifier

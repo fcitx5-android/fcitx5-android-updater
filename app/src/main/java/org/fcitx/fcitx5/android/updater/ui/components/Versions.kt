@@ -9,7 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.fcitx.fcitx5.android.updater.VersionUi
+import org.fcitx.fcitx5.android.updater.model.VersionUi
 
 @Composable
 fun Versions(name: String, versions: List<VersionUi>) {

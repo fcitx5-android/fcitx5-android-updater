@@ -1,4 +1,4 @@
-package org.fcitx.fcitx5.android.updater
+package org.fcitx.fcitx5.android.updater.model
 
 import java.io.File
 

@@ -1,10 +1,6 @@
-package org.fcitx.fcitx5.android.updater
+package org.fcitx.fcitx5.android.updater.model
 
 import android.content.Context
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -16,22 +12,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.fcitx.fcitx5.android.updater.api.AndroidJob
-import org.fcitx.fcitx5.android.updater.api.CommonApi
-import org.fcitx.fcitx5.android.updater.api.JenkinsApi
+import org.fcitx.fcitx5.android.updater.PackageUtils
+import org.fcitx.fcitx5.android.updater.UpdaterApplication
+import org.fcitx.fcitx5.android.updater.bytesToMiB
+import org.fcitx.fcitx5.android.updater.externalDir
 import org.fcitx.fcitx5.android.updater.network.DownloadEvent
 import org.fcitx.fcitx5.android.updater.network.DownloadTask
 import java.io.File
-import kotlin.math.pow
 
-class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int>) : ViewModel() {
-
-    private var buildNumbers = initialBuildNumbers
+abstract class VersionViewModel(
+    val name: String,
+    val pkgName: String,
+    val url: String
+) : ViewModel() {
 
     var hasRefreshed = false
-        private set
+        protected set
 
-    private val _isRefreshing = MutableStateFlow(false)
+    protected val _isRefreshing = MutableStateFlow(false)
 
     private val remoteVersionUiStates: MutableMap<VersionUi.Remote, MutableStateFlow<RemoteVersionUiState>> =
         mutableMapOf()
@@ -42,12 +40,12 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
     val isRefreshing: StateFlow<Boolean>
         get() = _isRefreshing.asStateFlow()
 
-    var installedVersion by mutableStateOf(VersionUi.NotInstalled)
+    var installedVersion = VersionUi.NotInstalled
         private set
-    private var remoteVersions = mutableMapOf<String, VersionUi.Remote>()
-    private val localVersions = mutableMapOf<String, VersionUi.Local>()
+    protected val remoteVersions = mutableMapOf<String, VersionUi.Remote>()
+    protected val localVersions = mutableMapOf<String, VersionUi.Local>()
 
-    val allVersions = mutableStateMapOf<String, VersionUi>()
+    protected val allVersions = mutableMapOf<String, VersionUi>()
 
     private val VersionUi.isNowInstalled
         get() = installedVersion.versionName == versionName
@@ -60,7 +58,7 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
     private val _fileOperation = MutableSharedFlow<FileOperation>()
     val fileOperation = _fileOperation.asSharedFlow()
 
-    private val downloadDir = File(externalDir, androidJob.jobName).apply {
+    private val downloadDir = File(externalDir, name).apply {
         mkdirs()
     }
 
@@ -71,7 +69,7 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
 
     fun uninstall() {
         viewModelScope.launch {
-            _fileOperation.emit(FileOperation.Uninstall(androidJob.pkgName))
+            _fileOperation.emit(FileOperation.Uninstall(pkgName))
         }
     }
 
@@ -99,7 +97,7 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
                 DownloadEvent.Downloaded -> {
                     flow.emit(RemoteVersionUiState.Downloaded)
                     val local = VersionUi.Local(
-                        androidJob.pkgName,
+                        pkgName,
                         remote.versionName,
                         remote.size,
                         remote.isNowInstalled,
@@ -188,7 +186,7 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
 
     fun exportInstalled() {
         val installedPath =
-            PackageUtils.getInstalledPath(UpdaterApplication.context, androidJob.pkgName) ?: return
+            PackageUtils.getInstalledPath(UpdaterApplication.context, pkgName) ?: return
         viewModelScope.launch {
             _fileOperation.emit(
                 FileOperation.Export(File(installedPath), installedVersion.displayName)
@@ -202,11 +200,11 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
     }
 
     private fun getInstalled(context: Context) =
-        PackageUtils.getInstalledVersionName(context, androidJob.pkgName)
+        PackageUtils.getInstalledVersionName(context, pkgName)
             ?.let { version ->
-                PackageUtils.getInstalledSize(context, androidJob.pkgName)
+                PackageUtils.getInstalledSize(context, pkgName)
                     ?.let { size ->
-                        VersionUi.Installed(androidJob.pkgName, version, size)
+                        VersionUi.Installed(pkgName, version, size)
                     }
 
             } ?: VersionUi.NotInstalled
@@ -216,12 +214,12 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
             refresh()
     }
 
-    private fun refreshInstalledVersion() {
+    fun refreshInstalledVersion() {
         installedVersion = getInstalled(UpdaterApplication.context)
         lastVersionName = installedVersion.versionName
     }
 
-    private fun refreshLocalVersions() {
+    fun refreshLocalVersions() {
         localVersions.clear()
         downloadDir
             .listFiles { file: File -> file.extension == "apk" }
@@ -229,10 +227,10 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
                 PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
                     ?.let { versionName ->
                         VersionUi.Local(
-                            androidJob.pkgName,
+                            pkgName,
                             versionName,
                             // Bytes to MiB
-                            it.length() / 2.0.pow(20),
+                            bytesToMiB(it.length()),
                             installedVersion.versionName == versionName,
                             it
                         )
@@ -244,49 +242,8 @@ class VersionViewModel(val androidJob: AndroidJob, initialBuildNumbers: List<Int
             }
     }
 
-    fun refresh() {
-        if (isRefreshing.value)
-            return
-        viewModelScope.launch {
-            _isRefreshing.emit(true)
-            remoteVersions.clear()
-            if (hasRefreshed) {
-                JenkinsApi.getJobBuilds(androidJob).also {
-                    buildNumbers = it.map { b -> b.buildNumber }
-                }
-            } else {
-                JenkinsApi.getJobBuildsByBuildNumbers(androidJob, buildNumbers).also {
-                    hasRefreshed = true
-                }
-            }.mapNotNull {
-                it.artifacts.selectByABI()?.let { artifact ->
-                    artifact.extractVersionName()?.let { versionName ->
-                        artifact to versionName
-                    }
-                }
-            }.parallelMap { (artifact, versionName) ->
-                VersionUi.Remote(
-                    androidJob.pkgName,
-                    versionName,
-                    // Bytes to MiB
-                    CommonApi.getContentLength(artifact.url)
-                        .getOrNull()
-                        ?.let { it / 2.0.pow(20) }
-                        ?: .0,
-                    versionName == installedVersion.versionName,
-                    artifact.url
-                )
-            }.also {
-                allVersions.clear()
-                refreshInstalledVersion()
-                refreshLocalVersions()
-            }.forEach {
-                remoteVersions[it.versionName] = it
-                if (it.versionName !in localVersions)
-                    allVersions[it.versionName] = it
-            }
-            _isRefreshing.emit(false)
-        }
-    }
+    abstract fun refresh()
+
+    abstract val sortedVersions:List<VersionUi>
 
 }

@@ -50,7 +50,7 @@ object JenkinsApi {
             }
         }
 
-    private suspend fun getJobBuild(job: String, buildNumber: Int): Result<JobBuild> =
+    private suspend fun getJobBuild(job: String, buildNumber: Int): Result<JenkinsJobBuild> =
         withContext(Dispatchers.IO) {
             val request = Request.Builder()
                 .url("https://jenkins.fcitx-im.org/job/android/job/$job/$buildNumber/api/json")
@@ -69,12 +69,12 @@ object JenkinsApi {
                 }
                 requireNotNull(buildData) { "Failed to find buildData" }
                 val sha1 = buildData.getJSONObject("lastBuiltRevision").getString("SHA1")
-                val artifacts = mutableListOf<Artifact>()
+                val artifacts = mutableListOf<JenkinsArtifact>()
                 val artifactArray = jObject.getJSONArray("artifacts")
                 for (i in 0 until artifactArray.length()) {
                     val artifact = artifactArray.getJSONObject(i)
                     artifacts.add(
-                        Artifact(
+                        JenkinsArtifact(
                             artifact.getString("fileName"),
                             artifact.getString("relativePath"),
                             "https://jenkins.fcitx-im.org/job/android/job/$job/$buildNumber/artifact/${
@@ -85,7 +85,7 @@ object JenkinsApi {
                         )
                     )
                 }
-                JobBuild(job, buildNumber, sha1.take(7), artifacts)
+                JenkinsJobBuild(job, buildNumber, sha1.take(7), artifacts)
             }
         }
 
@@ -101,7 +101,7 @@ object JenkinsApi {
             .parallelMap {
                 getJobBuildNumbersAndDescription(it).flatMap { (numbers, description) ->
                     getPackageNameAndUrlFromDescription(description).flatMap { (pkgName, url) ->
-                        Result.success(AndroidJob(it, pkgName, url) to numbers)
+                        Result.success(JenkinsAndroidJob(it, pkgName, url) to numbers)
                     }
                 }
             }
@@ -109,12 +109,12 @@ object JenkinsApi {
             .associate { it }
             .toSortedMap { a, b -> a.jobName.compareTo(b.jobName) }
 
-    suspend fun getJobBuildsByBuildNumbers(job: AndroidJob, buildNumbers: List<Int>) =
+    suspend fun getJobBuildsByBuildNumbers(job: JenkinsAndroidJob, buildNumbers: List<Int>) =
         buildNumbers
             .parallelMap { getJobBuild(job.jobName, it) }
             .catResults()
 
-    suspend fun getJobBuilds(job: AndroidJob) =
+    suspend fun getJobBuilds(job: JenkinsAndroidJob) =
         getJobBuildNumbersAndDescription(job.jobName)
             .getOrNull()
             ?.let { getJobBuildsByBuildNumbers(job, it.first) }

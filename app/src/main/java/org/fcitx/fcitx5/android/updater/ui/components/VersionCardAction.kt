@@ -12,9 +12,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.fcitx.fcitx5.android.updater.*
 import org.fcitx.fcitx5.android.updater.R
+import org.fcitx.fcitx5.android.updater.model.VersionViewModel
+import org.fcitx.fcitx5.android.updater.model.RemoteVersionUiState
+import org.fcitx.fcitx5.android.updater.model.VersionUi
 
 @Composable
 fun VersionCardAction(

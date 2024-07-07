@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import org.fcitx.fcitx5.android.updater.*
 import org.fcitx.fcitx5.android.updater.R
+import org.fcitx.fcitx5.android.updater.model.VersionViewModel
+import org.fcitx.fcitx5.android.updater.model.RemoteVersionUiState
+import org.fcitx.fcitx5.android.updater.model.VersionUi
 
 @Composable
 fun VersionCardMenu(version: VersionUi, modifier: Modifier) {

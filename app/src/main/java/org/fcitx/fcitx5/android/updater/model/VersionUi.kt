@@ -1,7 +1,8 @@
-package org.fcitx.fcitx5.android.updater
+package org.fcitx.fcitx5.android.updater.model
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import org.fcitx.fcitx5.android.updater.Const
 import java.io.File
 
 sealed interface VersionUi : Parcelable {
