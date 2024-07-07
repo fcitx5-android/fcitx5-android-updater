@@ -1,6 +1,10 @@
 package org.fcitx.fcitx5.android.updater.model
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -40,12 +44,12 @@ abstract class VersionViewModel(
     val isRefreshing: StateFlow<Boolean>
         get() = _isRefreshing.asStateFlow()
 
-    var installedVersion = VersionUi.NotInstalled
+    var installedVersion by mutableStateOf<VersionUi>(VersionUi.NotInstalled)
         private set
     protected val remoteVersions = mutableMapOf<String, VersionUi.Remote>()
     protected val localVersions = mutableMapOf<String, VersionUi.Local>()
 
-    protected val allVersions = mutableMapOf<String, VersionUi>()
+    protected val allVersions = mutableStateMapOf<String, VersionUi>()
 
     private val VersionUi.isNowInstalled
         get() = installedVersion.versionName == versionName
