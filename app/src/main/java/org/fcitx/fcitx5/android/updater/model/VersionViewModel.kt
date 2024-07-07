@@ -97,6 +97,7 @@ abstract class VersionViewModel(
                 DownloadEvent.Downloaded -> {
                     flow.emit(RemoteVersionUiState.Downloaded)
                     val local = VersionUi.Local(
+                        remote.versionCode,
                         pkgName,
                         remote.versionName,
                         remote.size,
@@ -200,13 +201,12 @@ abstract class VersionViewModel(
     }
 
     private fun getInstalled(context: Context) =
-        PackageUtils.getInstalledVersionName(context, pkgName)
-            ?.let { version ->
+        PackageUtils.getInstalledVersionInfo(context, pkgName)
+            ?.let { (versionName, versionCode) ->
                 PackageUtils.getInstalledSize(context, pkgName)
                     ?.let { size ->
-                        VersionUi.Installed(pkgName, version, size)
+                        VersionUi.Installed(versionCode, pkgName, versionName, size)
                     }
-
             } ?: VersionUi.NotInstalled
 
     fun refreshIfInstalledChanged() {
@@ -224,9 +224,10 @@ abstract class VersionViewModel(
         downloadDir
             .listFiles { file: File -> file.extension == "apk" }
             ?.mapNotNull {
-                PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
-                    ?.let { versionName ->
+                PackageUtils.getVersionInfo(UpdaterApplication.context, it.absolutePath)
+                    ?.let { (versionName, versionCode) ->
                         VersionUi.Local(
+                            versionCode,
                             pkgName,
                             versionName,
                             // Bytes to MiB

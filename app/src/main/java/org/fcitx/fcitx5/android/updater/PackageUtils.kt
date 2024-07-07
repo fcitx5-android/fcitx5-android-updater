@@ -2,6 +2,7 @@ package org.fcitx.fcitx5.android.updater
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -11,16 +12,24 @@ import kotlin.math.pow
 
 object PackageUtils {
 
-    fun getVersionName(context: Context, apkFilePath: String) =
+    private fun packageInfoToVersion(info: PackageInfo) =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.versionName to info.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            info.versionName to info.versionCode.toLong()
+        }
+
+    fun getVersionInfo(context: Context, apkFilePath: String) =
         context.packageManager.run {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 getPackageArchiveInfo(apkFilePath, PackageManager.PackageInfoFlags.of(0))
             } else {
                 getPackageArchiveInfo(apkFilePath, 0)
-            }?.versionName
+            }?.let { packageInfoToVersion(it) }
         }
 
-    fun getInstalledVersionName(
+    fun getInstalledVersionInfo(
         context: Context,
         packageName: String
     ) = context.packageManager.runCatching {
@@ -28,7 +37,7 @@ object PackageUtils {
             getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
         } else {
             getPackageInfo(packageName, 0)
-        }.versionName
+        }.let { packageInfoToVersion(it) }
     }.getOrNull()
 
     fun getInstalledPath(
