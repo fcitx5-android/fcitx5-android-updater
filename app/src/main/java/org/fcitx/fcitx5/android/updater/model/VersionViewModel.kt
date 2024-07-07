@@ -1,6 +1,10 @@
 package org.fcitx.fcitx5.android.updater.model
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -40,12 +44,12 @@ abstract class VersionViewModel(
     val isRefreshing: StateFlow<Boolean>
         get() = _isRefreshing.asStateFlow()
 
-    var installedVersion = VersionUi.NotInstalled
+    var installedVersion by mutableStateOf<VersionUi>(VersionUi.NotInstalled)
         private set
     protected val remoteVersions = mutableMapOf<String, VersionUi.Remote>()
     protected val localVersions = mutableMapOf<String, VersionUi.Local>()
 
-    protected val allVersions = mutableMapOf<String, VersionUi>()
+    protected val allVersions = mutableStateMapOf<String, VersionUi>()
 
     private val VersionUi.isNowInstalled
         get() = installedVersion.versionName == versionName
@@ -97,6 +101,7 @@ abstract class VersionViewModel(
                 DownloadEvent.Downloaded -> {
                     flow.emit(RemoteVersionUiState.Downloaded)
                     val local = VersionUi.Local(
+                        remote.versionCode,
                         pkgName,
                         remote.versionName,
                         remote.size,
@@ -200,13 +205,12 @@ abstract class VersionViewModel(
     }
 
     private fun getInstalled(context: Context) =
-        PackageUtils.getInstalledVersionName(context, pkgName)
-            ?.let { version ->
+        PackageUtils.getInstalledVersionInfo(context, pkgName)
+            ?.let { (versionName, versionCode) ->
                 PackageUtils.getInstalledSize(context, pkgName)
                     ?.let { size ->
-                        VersionUi.Installed(pkgName, version, size)
+                        VersionUi.Installed(versionCode, pkgName, versionName, size)
                     }
-
             } ?: VersionUi.NotInstalled
 
     fun refreshIfInstalledChanged() {
@@ -224,9 +228,10 @@ abstract class VersionViewModel(
         downloadDir
             .listFiles { file: File -> file.extension == "apk" }
             ?.mapNotNull {
-                PackageUtils.getVersionName(UpdaterApplication.context, it.absolutePath)
-                    ?.let { versionName ->
+                PackageUtils.getVersionInfo(UpdaterApplication.context, it.absolutePath)
+                    ?.let { (versionName, versionCode) ->
                         VersionUi.Local(
+                            versionCode,
                             pkgName,
                             versionName,
                             // Bytes to MiB
@@ -244,6 +249,5 @@ abstract class VersionViewModel(
 
     abstract fun refresh()
 
-    abstract val sortedVersions:List<VersionUi>
-
+    abstract val sortedVersions: List<VersionUi>
 }

@@ -6,9 +6,9 @@ data class FDroidPackage(
     val versions: List<Version>,
 ) {
     data class Version(
+        val versionCode: Long,
         val versionName: String,
         val artifact: FDroidArtifact,
         val abi: List<String>?,
-        val added: Long
     )
 }

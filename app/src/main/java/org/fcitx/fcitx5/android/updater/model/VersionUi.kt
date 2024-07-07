@@ -7,6 +7,8 @@ import java.io.File
 
 sealed interface VersionUi : Parcelable {
 
+    val versionCode: Long
+
     val versionName: String
 
     val size: Double
@@ -17,6 +19,7 @@ sealed interface VersionUi : Parcelable {
 
     @Parcelize
     data class Installed(
+        override val versionCode: Long,
         override val pkgName: String,
         override val versionName: String,
         override val size: Double,
@@ -26,6 +29,7 @@ sealed interface VersionUi : Parcelable {
     @Parcelize
     data class Remote(
         override val pkgName: String,
+        override val versionCode: Long,
         override val versionName: String,
         override val size: Double,
         override val isInstalled: Boolean,
@@ -34,6 +38,7 @@ sealed interface VersionUi : Parcelable {
 
     @Parcelize
     data class Local(
+        override val versionCode: Long,
         override val pkgName: String,
         override val versionName: String,
         override val size: Double,
@@ -45,6 +50,6 @@ sealed interface VersionUi : Parcelable {
         get() = "$pkgName-$versionName-${Const.deviceABI}.apk"
 
     companion object {
-        val NotInstalled = Installed("N/A", "N/A", .0, false)
+        val NotInstalled = Installed(-1, "N/A", "N/A", .0, false)
     }
 }

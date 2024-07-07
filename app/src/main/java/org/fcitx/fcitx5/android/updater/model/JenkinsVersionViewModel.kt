@@ -3,8 +3,8 @@ package org.fcitx.fcitx5.android.updater.model
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import net.swiftzer.semver.SemVer
-import org.fcitx.fcitx5.android.updater.api.JenkinsAndroidJob
 import org.fcitx.fcitx5.android.updater.api.CommonApi
+import org.fcitx.fcitx5.android.updater.api.JenkinsAndroidJob
 import org.fcitx.fcitx5.android.updater.api.JenkinsApi
 import org.fcitx.fcitx5.android.updater.bytesToMiB
 import org.fcitx.fcitx5.android.updater.extractVersionName
@@ -40,6 +40,7 @@ class JenkinsVersionViewModel(private val jenkinsAndroidJob: JenkinsAndroidJob, 
             }.parallelMap { (artifact, versionName) ->
                 VersionUi.Remote(
                     pkgName,
+                    -1,
                     versionName,
                     // Bytes to MiB
                     CommonApi.getContentLength(artifact.url)
