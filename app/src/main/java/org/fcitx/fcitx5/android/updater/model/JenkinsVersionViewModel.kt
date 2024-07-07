@@ -64,8 +64,8 @@ class JenkinsVersionViewModel(private val jenkinsAndroidJob: JenkinsAndroidJob, 
 
     override val sortedVersions: List<VersionUi>
         get() = allVersions.values.sortedByDescending {
-            parseVersionNumber(it.versionName).getOrThrow().let { (a, b, _) ->
-                SemVer.parse("$a-$b")
+            parseVersionNumber(it.versionName).getOrNull()?.let { (a, b, _) ->
+                SemVer.parseOrNull("$a-$b")
             }
         }
 }
