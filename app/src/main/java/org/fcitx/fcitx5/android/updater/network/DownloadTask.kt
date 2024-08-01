@@ -1,9 +1,15 @@
 package org.fcitx.fcitx5.android.updater.network
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import okhttp3.Request
 import org.fcitx.fcitx5.android.updater.Const
 import org.fcitx.fcitx5.android.updater.api.CommonApi
@@ -17,8 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class DownloadTask(
     private val url: String,
     val file: File,
-) :
-    CoroutineScope by CoroutineScope(Dispatchers.IO) {
+) : CoroutineScope by CoroutineScope(Dispatchers.IO) {
 
     private val cacheFile = File(file.parent!!, file.nameWithoutExtension + ".$TEMP_EXT")
 

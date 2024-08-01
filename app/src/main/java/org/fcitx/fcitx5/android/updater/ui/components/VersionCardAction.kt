@@ -1,7 +1,12 @@
 package org.fcitx.fcitx5.android.updater.ui.components
 
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.material.*
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -12,11 +17,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import org.fcitx.fcitx5.android.updater.*
 import org.fcitx.fcitx5.android.updater.R
-import org.fcitx.fcitx5.android.updater.model.VersionViewModel
 import org.fcitx.fcitx5.android.updater.model.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.model.VersionUi
+import org.fcitx.fcitx5.android.updater.model.VersionViewModel
+import org.fcitx.fcitx5.android.updater.versionViewModel
 
 @Composable
 fun VersionCardAction(
