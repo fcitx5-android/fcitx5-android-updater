@@ -288,7 +288,8 @@ fun NavScreen(
     NavHost(
         navController = navController,
         startDestination = viewModels.keys.first(),
-        modifier = Modifier.padding(paddingValues)
+        modifier = Modifier.padding(paddingValues),
+        contentAlignment = Alignment.TopCenter
     ) {
         viewModels.forEach { (jobName, viewModel) ->
             composable(jobName) {
@@ -315,7 +316,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
         val refreshing by viewModel.isRefreshing.collectAsState()
         val pullRefreshState = rememberPullRefreshState(refreshing, { viewModel.refresh() })
         val urlHandler = LocalUriHandler.current
-        Box(Modifier.pullRefresh(pullRefreshState)) {
+        Box(Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Surface(
                     modifier = Modifier
