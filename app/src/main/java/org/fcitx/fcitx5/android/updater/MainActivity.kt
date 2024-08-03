@@ -46,6 +46,8 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Menu
@@ -71,7 +73,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -127,7 +128,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(0))
         intentLauncher = registerForActivityResult(StartActivityForResult()) {
             viewModel.versions.value.forEach {
                 it.value.refreshIfInstalledChanged()
@@ -163,9 +164,6 @@ class MainActivity : ComponentActivity() {
                 vvm.fileOperation.onEach { handleFileOperation(it) }.launchIn(this)
             }
         }
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(0)
-        )
         setContent {
             Fcitx5ForAndroidUpdaterTheme {
                 val loaded by viewModel.loaded.collectAsState()
@@ -222,9 +220,11 @@ fun MainScreen(
                         val selected = navBackStackEntry?.destination?.route == name
                         val color =
                             if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
-                        val icon = when (name) {
-                            "fcitx5-android" -> Icons.Default.Keyboard
-                            "fcitx5-android-updater" -> Icons.Default.SystemUpdate
+                        val icon = when {
+                            name == "fcitx5-android" -> Icons.Default.Keyboard
+                            name == "fcitx5-android-updater" -> Icons.Default.SystemUpdate
+                            name.startsWith("pinyin-") -> Icons.AutoMirrored.Filled.LibraryBooks
+                            name.startsWith("tables-") -> Icons.Default.Book
                             else -> Icons.Default.Extension
                         }
                         ListItem(
@@ -316,7 +316,11 @@ fun VersionScreen(viewModel: VersionViewModel) {
         val refreshing by viewModel.isRefreshing.collectAsState()
         val pullRefreshState = rememberPullRefreshState(refreshing, { viewModel.refresh() })
         val urlHandler = LocalUriHandler.current
-        Box(Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .pullRefresh(pullRefreshState)
+        ) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Surface(
                     modifier = Modifier
