@@ -1,5 +1,4 @@
-@file:Suppress("UnstableApiUsage")
-
+import com.android.build.gradle.internal.dsl.SigningConfig
 import com.android.build.gradle.internal.tasks.CompileArtProfileTask
 import com.android.build.gradle.internal.tasks.ExpandArtProfileWildcardsTask
 import com.android.build.gradle.internal.tasks.MergeArtProfileTask
@@ -7,19 +6,14 @@ import com.android.build.gradle.tasks.PackageApplication
 import org.gradle.api.internal.provider.AbstractProperty
 import org.gradle.api.internal.provider.Providers
 import java.io.ByteArrayOutputStream
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-parcelize")
-}
-
-fun exec(cmd: String): String = ByteArrayOutputStream().use {
-    project.exec {
-        commandLine = cmd.split(" ")
-        standardOutput = it
-    }
-    it.toString().trim()
+    kotlin("android")
+    kotlin("plugin.compose")
+    kotlin("plugin.parcelize")
 }
 
 android {
@@ -46,8 +40,10 @@ android {
         debug {
             applicationIdSuffix = ".debug"
         }
-        forEach {
-            it.vcsInfo.include = false
+        all {
+            // remove META-INF/version-control-info.textproto
+            @Suppress("UnstableApiUsage")
+            vcsInfo.include = false
         }
     }
     dependenciesInfo {
@@ -60,11 +56,13 @@ android {
                 "/META-INF/*.version",
                 "/META-INF/*.kotlin_module",
                 "/kotlin/**",
+                "/DebugProbesKt.bin",
                 "/kotlin-tooling-metadata.json"
             )
         }
     }
     androidResources {
+        @Suppress("UnstableApiUsage")
         generateLocaleConfig = true
     }
     compileOptions {
@@ -78,8 +76,8 @@ android {
         buildConfig = true
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+    composeCompiler {
+        enableStrongSkippingMode = true
     }
 }
 
@@ -125,4 +123,12 @@ configurations {
         // remove Baseline Profile Installer or whatever it is...
         exclude(group = "androidx.profileinstaller", module = "profileinstaller")
     }
+}
+
+fun exec(cmd: String): String = ByteArrayOutputStream().use {
+    project.exec {
+        commandLine = cmd.split(" ")
+        standardOutput = it
+    }
+    it.toString().trim()
 }
