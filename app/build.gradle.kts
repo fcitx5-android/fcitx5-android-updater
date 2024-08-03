@@ -36,6 +36,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = createSigningConfigFromEnv(signingConfigs)
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -131,4 +132,44 @@ fun exec(cmd: String): String = ByteArrayOutputStream().use {
         standardOutput = it
     }
     it.toString().trim()
+}
+
+fun env(name: String): String? = System.getenv(name)
+
+private var signKeyTempFile: File? = null
+
+fun createSigningConfigFromEnv(signingConfigs: NamedDomainObjectContainer<SigningConfig>): SigningConfig? {
+    var signKeyFile: File? = null
+    env("SIGN_KEY_FILE")?.let {
+        val file = File(it)
+        if (file.exists()) {
+            signKeyFile = file
+        }
+    }
+    @OptIn(ExperimentalEncodingApi::class)
+    env("SIGN_KEY_BASE64")?.let {
+        if (signKeyTempFile?.exists() == true) {
+            signKeyFile = signKeyTempFile
+        } else {
+            val buildDir = layout.buildDirectory.asFile.get()
+            buildDir.mkdirs()
+            val file = File.createTempFile("sign-", ".ks", buildDir)
+            try {
+                file.writeBytes(Base64.decode(it))
+                file.deleteOnExit()
+                signKeyFile = file
+                signKeyTempFile = file
+            } catch (e: Exception) {
+                file.delete()
+            }
+        }
+    }
+    signKeyFile ?: return null
+    println("signKeyFile: $signKeyFile")
+    return signingConfigs.create("release") {
+        storeFile = signKeyFile
+        storePassword = env("SIGN_KEY_PWD")
+        keyAlias = env("SIGN_KEY_ALIAS")
+        keyPassword = env("SIGN_KEY_PWD")
+    }
 }
