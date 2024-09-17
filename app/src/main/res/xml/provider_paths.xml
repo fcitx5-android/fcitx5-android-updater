@@ -3,4 +3,8 @@
     <external-files-path
         name="external_files"
         path="." />
+    <!-- for devices use SD card as external shared storage -->
+    <root-path
+        name="storage"
+        path="/storage/" />
 </paths>
