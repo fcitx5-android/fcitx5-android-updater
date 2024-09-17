@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import org.fcitx.fcitx5.android.updater.R
 import org.fcitx.fcitx5.android.updater.model.RemoteVersionUiState
@@ -71,7 +70,6 @@ fun VersionCardMenuIcon(
             expanded = menuExpanded,
             onDismissRequest = dismissMenu,
             modifier = Modifier.defaultMinSize(minWidth = 180.dp),
-            offset = DpOffset((-8).dp, (-56).dp),
             content = { content(dismissMenu) }
         )
     }

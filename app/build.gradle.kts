@@ -18,8 +18,8 @@ plugins {
 
 android {
     namespace = "org.fcitx.fcitx5.android.updater"
-    compileSdk = 34
-    buildToolsVersion = "34.0.0"
+    compileSdk = 35
+    buildToolsVersion = "35.0.0"
     defaultConfig {
         applicationId = "org.fcitx.fcitx5.android.updater"
         minSdk = 23
@@ -77,9 +77,6 @@ android {
         buildConfig = true
         compose = true
     }
-    composeCompiler {
-        enableStrongSkippingMode = true
-    }
 }
 
 // remove META-INF/com/android/build/gradle/app-metadata.properties
@@ -105,16 +102,16 @@ dependencies {
     implementation("net.swiftzer.semver:semver:2.0.0")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.activity:activity-compose:1.9.1")
-    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation(platform("androidx.compose:compose-bom:2024.09.01"))
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-    val lifecycleVersion = "2.8.4"
+    implementation("androidx.navigation:navigation-compose:2.8.0")
+    val lifecycleVersion = "2.8.5"
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
 }
@@ -123,6 +120,8 @@ configurations {
     all {
         // remove Baseline Profile Installer or whatever it is...
         exclude(group = "androidx.profileinstaller", module = "profileinstaller")
+        // remove libandroidx.graphics.path.so
+        exclude(group = "androidx.graphics", module = "graphics-path")
     }
 }
 
@@ -165,7 +164,6 @@ fun createSigningConfigFromEnv(signingConfigs: NamedDomainObjectContainer<Signin
         }
     }
     signKeyFile ?: return null
-    println("signKeyFile: $signKeyFile")
     return signingConfigs.create("release") {
         storeFile = signKeyFile
         storePassword = env("SIGN_KEY_PWD")

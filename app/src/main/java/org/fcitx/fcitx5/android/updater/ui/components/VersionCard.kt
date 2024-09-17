@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import org.fcitx.fcitx5.android.updater.model.VersionUi
+import java.util.Locale
 
 @Composable
 fun VersionCard(version: VersionUi) {
@@ -35,7 +36,7 @@ fun VersionCard(version: VersionUi) {
             )
             CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
                 Text(
-                    text = String.format("%.2f MiB", version.size),
+                    text = String.format(Locale.ROOT, "%.2f MiB", version.size),
                     style = MaterialTheme.typography.body2,
                     modifier = Modifier
                         .padding(bottom = 8.dp)

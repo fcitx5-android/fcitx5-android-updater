@@ -14,10 +14,10 @@ object PackageUtils {
 
     private fun packageInfoToVersion(info: PackageInfo) =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            info.versionName to info.longVersionCode
+            (info.versionName ?: "") to info.longVersionCode
         } else {
             @Suppress("DEPRECATION")
-            info.versionName to info.versionCode.toLong()
+            (info.versionName ?: "") to info.versionCode.toLong()
         }
 
     fun getVersionInfo(context: Context, apkFilePath: String) =
