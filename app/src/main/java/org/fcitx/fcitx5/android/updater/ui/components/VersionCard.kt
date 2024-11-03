@@ -28,7 +28,7 @@ fun VersionCard(version: VersionUi) {
             val (title, size, menu, action) = createRefs()
             Text(
                 text = version.versionName,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.constrainAs(title) {
                     top.linkTo(parent.top)
                     start.linkTo(parent.start)
@@ -37,7 +37,7 @@ fun VersionCard(version: VersionUi) {
             CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
                 Text(
                     text = String.format(Locale.ROOT, "%.2f MiB", version.size),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
                         .padding(bottom = 8.dp)
                         .constrainAs(size) {

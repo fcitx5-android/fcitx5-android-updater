@@ -254,11 +254,6 @@ fun MainScreen(
         gesturesEnabled = true,
         content = {
             Scaffold(
-//                modifier = Modifier.windowInsetsPadding(
-////                    WindowInsets.navigationBars.only(
-////                        WindowInsetsSides.Horizontal
-////                    )
-//                ),
                 topBar = {
                     TopAppBar(
                         title = { Text(stringResource(R.string.app_name)) },
@@ -367,7 +362,7 @@ fun VersionScreen(viewModel: VersionViewModel) {
                             text = viewModel.name,
                             modifier = Modifier.padding(start = 10.dp),
                             fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
                 }
