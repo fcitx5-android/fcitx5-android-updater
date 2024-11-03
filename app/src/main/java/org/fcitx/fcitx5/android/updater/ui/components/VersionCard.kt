@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -28,7 +28,7 @@ fun VersionCard(version: VersionUi) {
             val (title, size, menu, action) = createRefs()
             Text(
                 text = version.versionName,
-                style = MaterialTheme.typography.body1,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.constrainAs(title) {
                     top.linkTo(parent.top)
                     start.linkTo(parent.start)
@@ -37,7 +37,7 @@ fun VersionCard(version: VersionUi) {
             CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
                 Text(
                     text = String.format(Locale.ROOT, "%.2f MiB", version.size),
-                    style = MaterialTheme.typography.body2,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .padding(bottom = 8.dp)
                         .constrainAs(size) {
