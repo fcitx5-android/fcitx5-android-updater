@@ -1,12 +1,13 @@
 package org.fcitx.fcitx5.android.updater.ui.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -70,7 +71,11 @@ fun VersionCardActionLocal(
                 top.linkTo(parent.top)
                 end.linkTo(parent.end)
             },
-            content = { Text(stringResource(R.string.install)) }
+            content = {
+                Column {
+                    Text(stringResource(R.string.install)) }
+                }
+
         )
     }
 }
@@ -126,10 +131,13 @@ fun VersionCardActionRemote(
                         text = "${(progress * 100).toInt()}%",
                         modifier = progressTextModifier,
                         textAlign = TextAlign.End,
-                        style = MaterialTheme.typography.body2
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                LinearProgressIndicator(progress = progress, modifier = progressBarModifier)
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = progressBarModifier,
+                )
             }
             is RemoteVersionUiState.Idle -> {
                 val operable = (state as RemoteVersionUiState.Idle).operable
@@ -152,10 +160,13 @@ fun VersionCardActionRemote(
                         text = "${(progress * 100).toInt()}%",
                         modifier = progressTextModifier,
                         textAlign = TextAlign.End,
-                        style = MaterialTheme.typography.body2
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                LinearProgressIndicator(progress = progress, modifier = progressBarModifier)
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = progressBarModifier,
+                )
             }
             RemoteVersionUiState.Pending -> {
                 TextButton(
@@ -166,7 +177,7 @@ fun VersionCardActionRemote(
                 Text(
                     text = "",
                     modifier = progressTextModifier,
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 LinearProgressIndicator(modifier = progressBarModifier)
             }
@@ -179,7 +190,7 @@ fun VersionCardActionRemote(
                 Text(
                     text = "",
                     modifier = progressTextModifier,
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 LinearProgressIndicator(modifier = progressBarModifier)
             }

@@ -5,12 +5,12 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
@@ -83,10 +83,9 @@ fun VersionCardMenuInstalled(version: VersionUi.Installed, dismissMenu: () -> Un
             onClick = {
                 dismissMenu()
                 viewModel.exportInstalled()
-            }
-        ) {
-            Text(stringResource(R.string.export))
-        }
+            },
+            text = { Text(stringResource(R.string.export)) }
+        )
     }
 }
 
@@ -97,18 +96,20 @@ fun VersionCardMenuLocal(version: VersionUi.Local, dismissMenu: () -> Unit) {
         onClick = {
             dismissMenu()
             viewModel.share(version)
+        },
+        text = {
+            Text(stringResource(R.string.share))
         }
-    ) {
-        Text(stringResource(R.string.share))
-    }
+    )
     DropdownMenuItem(
         onClick = {
             dismissMenu()
             viewModel.export(version)
+        },
+        text =  {
+            Text(stringResource(R.string.export))
         }
-    ) {
-        Text(stringResource(R.string.export))
-    }
+    )
     val remoteUrl by remember { mutableStateOf(viewModel.getRemoteUrl(version)) }
     remoteUrl?.let {
         val clipboardManager = LocalClipboardManager.current
@@ -116,19 +117,21 @@ fun VersionCardMenuLocal(version: VersionUi.Local, dismissMenu: () -> Unit) {
             onClick = {
                 dismissMenu()
                 clipboardManager.setText(AnnotatedString(it))
+            },
+            text = {
+                Text(stringResource(R.string.copy_url))
             }
-        ) {
-            Text(stringResource(R.string.copy_url))
-        }
+        )
     }
     DropdownMenuItem(
         onClick = {
             dismissMenu()
             viewModel.delete(version)
+        },
+        text = {
+            Text(stringResource(R.string.delete_apk))
         }
-    ) {
-        Text(stringResource(R.string.delete_apk))
-    }
+    )
 }
 
 @Composable
@@ -143,10 +146,11 @@ fun VersionCardMenuRemote(version: VersionUi.Remote, dismissMenu: () -> Unit) {
                 onClick = {
                     dismissMenu()
                     viewModel.cancelDownload(version)
+                },
+                text = {
+                    Text(stringResource(R.string.cancel))
                 }
-            ) {
-                Text(stringResource(R.string.cancel))
-            }
+            )
         }
         is RemoteVersionUiState.Idle -> {
         }
@@ -155,10 +159,11 @@ fun VersionCardMenuRemote(version: VersionUi.Remote, dismissMenu: () -> Unit) {
                 onClick = {
                     dismissMenu()
                     viewModel.cancelDownload(version)
+                },
+                text = {
+                    Text(stringResource(R.string.cancel))
                 }
-            ) {
-                Text(stringResource(R.string.cancel))
-            }
+            )
         }
         RemoteVersionUiState.Pending -> {
         }
@@ -170,8 +175,9 @@ fun VersionCardMenuRemote(version: VersionUi.Remote, dismissMenu: () -> Unit) {
         onClick = {
             dismissMenu()
             clipboardManager.setText(AnnotatedString(version.downloadUrl))
+        },
+        text = {
+            Text(stringResource(R.string.copy_url))
         }
-    ) {
-        Text(stringResource(R.string.copy_url))
-    }
+    )
 }

@@ -1,40 +1,44 @@
 package org.fcitx.fcitx5.android.updater.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Shapes
-import androidx.compose.material.Typography
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val DarkColors = darkColors(
+private val DarkColors = darkColorScheme(
     primary = Purple200,
-    primaryVariant = Purple700,
+    //primaryVariant = Purple700,
     secondary = Teal200
 )
 
-private val LightColors = lightColors(
+private val LightColors = lightColorScheme(
     primary = Purple500,
-    primaryVariant = Purple700,
+    // primaryVariant = Purple700,
     secondary = Teal200
 )
 
 val DenseTypography = Typography(
-    body1 = TextStyle(
+    bodyLarge = TextStyle(
         fontSize = 16.sp,
         fontWeight = FontWeight.Normal
     ),
-    body2 = TextStyle(
+    bodyMedium = TextStyle(
         fontSize = 14.sp,
         fontWeight = FontWeight.Normal
     ),
-    button = TextStyle(
+    labelLarge = TextStyle(
         fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         letterSpacing = 0.sp
@@ -52,8 +56,17 @@ fun Fcitx5ForAndroidUpdaterTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
+    val colors = when {
+        (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) -> {
+            if (darkTheme) dynamicDarkColorScheme(context)
+            else dynamicLightColorScheme(context)
+        }
+        darkTheme -> DarkColors
+        else -> LightColors
+    }
     MaterialTheme(
-        colors = if (darkTheme) DarkColors else LightColors,
+        colorScheme = colors,
         typography = DenseTypography,
         shapes = SharpShapes,
         content = content
