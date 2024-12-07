@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Средство обновления Fcitx5 для Android</string>
+    <string name="app_name">Средство обновления Fcitx5</string>
     <string name="download">Загрузить</string>
     <string name="downloaded">Загружено</string>
     <string name="uninstall">Удалить</string>

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Fcitx5 for Android Updater</string>
+    <string name="app_name">Fcitx5 Updater</string>
     <string name="download">Download</string>
     <string name="downloaded">Downloaded</string>
     <string name="uninstall">Uninstall</string>
