@@ -25,7 +25,7 @@ android {
         minSdk = 23
         targetSdk = 35
         versionCode = 2
-        versionName = exec("git describe --tags --long --always")
+        versionName = exec("git describe --tags --long --always", "1.1.0")
         setProperty("archivesBaseName", "$applicationId-$versionName")
     }
     buildTypes {
@@ -36,7 +36,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = createSigningConfigFromEnv(signingConfigs)
+            signingConfig = signingConfigs.createSigningConfigFromEnv()
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -67,11 +67,11 @@ android {
         generateLocaleConfig = true
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
+        jvmTarget = JavaVersion.VERSION_11.toString()
     }
     buildFeatures {
         buildConfig = true
@@ -101,17 +101,17 @@ tasks.withType<CompileArtProfileTask> { enabled = false }
 dependencies {
     implementation("net.swiftzer.semver:semver:2.0.0")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.activity:activity-compose:1.9.2")
-    implementation(platform("androidx.compose:compose-bom:2024.09.01"))
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation(platform("androidx.compose:compose-bom:2024.11.00"))
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-    implementation("androidx.navigation:navigation-compose:2.8.0")
-    val lifecycleVersion = "2.8.5"
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.0")
+    implementation("androidx.navigation:navigation-compose:2.8.4")
+    val lifecycleVersion = "2.8.7"
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
 }
@@ -125,19 +125,22 @@ configurations {
     }
 }
 
-fun exec(cmd: String): String = ByteArrayOutputStream().use {
-    project.exec {
-        commandLine = cmd.split(" ")
-        standardOutput = it
+fun exec(cmd: String, defaultValue: String = ""): String {
+    val stdout = ByteArrayOutputStream()
+    val result = stdout.use {
+        project.exec {
+            commandLine = cmd.split(" ")
+            standardOutput = stdout
+        }
     }
-    it.toString().trim()
+    return if (result.exitValue == 0) stdout.toString().trim() else defaultValue
 }
 
 fun env(name: String): String? = System.getenv(name)
 
 private var signKeyTempFile: File? = null
 
-fun createSigningConfigFromEnv(signingConfigs: NamedDomainObjectContainer<SigningConfig>): SigningConfig? {
+fun NamedDomainObjectContainer<SigningConfig>.createSigningConfigFromEnv(): SigningConfig? {
     var signKeyFile: File? = null
     env("SIGN_KEY_FILE")?.let {
         val file = File(it)
@@ -164,7 +167,7 @@ fun createSigningConfigFromEnv(signingConfigs: NamedDomainObjectContainer<Signin
         }
     }
     signKeyFile ?: return null
-    return signingConfigs.create("release") {
+    return create("release") {
         storeFile = signKeyFile
         storePassword = env("SIGN_KEY_PWD")
         keyAlias = env("SIGN_KEY_ALIAS")
