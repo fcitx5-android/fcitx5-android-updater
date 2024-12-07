@@ -20,6 +20,15 @@ class JenkinsVersionViewModel(private val jenkinsAndroidJob: JenkinsAndroidJob, 
     override fun refresh() {
         if (isRefreshing.value)
             return
+        refreshInstalledVersion()
+        allVersions.forEach { (k, v) ->
+            val isInstalled = v.versionName == installedVersion.versionName
+            allVersions[k] = when (v) {
+                is VersionUi.Installed -> v
+                is VersionUi.Local -> v.copy(isInstalled = isInstalled)
+                is VersionUi.Remote -> v.copy(isInstalled = isInstalled)
+            }
+        }
         viewModelScope.launch {
             _isRefreshing.emit(true)
             remoteVersions.clear()
@@ -52,7 +61,6 @@ class JenkinsVersionViewModel(private val jenkinsAndroidJob: JenkinsAndroidJob, 
                 )
             }.also {
                 allVersions.clear()
-                refreshInstalledVersion()
                 refreshLocalVersions()
             }.forEach {
                 remoteVersions[it.versionName] = it

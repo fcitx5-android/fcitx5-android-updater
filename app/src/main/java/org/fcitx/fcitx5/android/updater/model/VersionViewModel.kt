@@ -144,7 +144,6 @@ abstract class VersionViewModel(
         remoteDownloadTasks[remote]?.pause()
     }
 
-
     fun resumeDownload(remote: VersionUi.Remote) {
         remoteDownloadTasks[remote]?.resume()
     }

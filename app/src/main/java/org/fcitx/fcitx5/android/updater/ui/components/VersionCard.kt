@@ -4,12 +4,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -25,7 +27,7 @@ fun VersionCard(version: VersionUi) {
                 .fillMaxWidth()
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
         ) {
-            val (title, size, menu, action) = createRefs()
+            val (title, installed, size, menu, action) = createRefs()
             Text(
                 text = version.versionName,
                 style = MaterialTheme.typography.body1,
@@ -34,18 +36,31 @@ fun VersionCard(version: VersionUi) {
                     start.linkTo(parent.start)
                 }
             )
-            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
-                Text(
-                    text = String.format(Locale.ROOT, "%.2f MiB", version.size),
-                    style = MaterialTheme.typography.body2,
+            if (version !is VersionUi.Installed && version.isInstalled) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    tint = MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.medium),
+                    contentDescription = null,
                     modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .constrainAs(size) {
-                            top.linkTo(title.bottom, 4.dp)
-                            start.linkTo(parent.start)
+                        .size(16.dp)
+                        .constrainAs(installed) {
+                            top.linkTo(title.top)
+                            bottom.linkTo(title.bottom)
+                            start.linkTo(title.end, 4.dp)
                         }
                 )
             }
+            Text(
+                text = String.format(Locale.ROOT, "%.2f MiB", version.size),
+                color = MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.medium),
+                style = MaterialTheme.typography.body2,
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .constrainAs(size) {
+                        top.linkTo(title.bottom, 4.dp)
+                        start.linkTo(parent.start)
+                    }
+            )
             VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
                 top.linkTo(parent.top)
                 end.linkTo(parent.end)

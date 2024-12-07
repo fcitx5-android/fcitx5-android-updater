@@ -9,12 +9,11 @@ import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,9 +61,11 @@ fun VersionCardMenuIcon(
         var menuExpanded by remember { mutableStateOf(false) }
         val dismissMenu = { menuExpanded = false }
         IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
-            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
-                Icon(imageVector = Icons.Filled.MoreVert, contentDescription = null)
-            }
+            Icon(
+                imageVector = Icons.Filled.MoreVert,
+                tint = MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.medium),
+                contentDescription = null
+            )
         }
         DropdownMenu(
             expanded = menuExpanded,

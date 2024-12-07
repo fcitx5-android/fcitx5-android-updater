@@ -3,12 +3,10 @@ package org.fcitx.fcitx5.android.updater.ui.components
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -121,14 +119,13 @@ fun VersionCardActionRemote(
                     content = { Text(text = stringResource(R.string.pause)) }
                 )
                 val progress = (state as RemoteVersionUiState.Downloading).progress
-                CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
-                    Text(
-                        text = "${(progress * 100).toInt()}%",
-                        modifier = progressTextModifier,
-                        textAlign = TextAlign.End,
-                        style = MaterialTheme.typography.body2
-                    )
-                }
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    color = MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.medium),
+                    modifier = progressTextModifier,
+                    textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.body2
+                )
                 LinearProgressIndicator(progress = progress, modifier = progressBarModifier)
             }
             is RemoteVersionUiState.Idle -> {
@@ -147,14 +144,13 @@ fun VersionCardActionRemote(
                     content = { Text(text = stringResource(R.string.resume)) }
                 )
                 val progress = (state as RemoteVersionUiState.Pausing).progress
-                CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
-                    Text(
-                        text = "${(progress * 100).toInt()}%",
-                        modifier = progressTextModifier,
-                        textAlign = TextAlign.End,
-                        style = MaterialTheme.typography.body2
-                    )
-                }
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    color = MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.medium),
+                    modifier = progressTextModifier,
+                    textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.body2
+                )
                 LinearProgressIndicator(progress = progress, modifier = progressBarModifier)
             }
             RemoteVersionUiState.Pending -> {
