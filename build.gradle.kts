@@ -1,7 +1,6 @@
 plugins {
-    id("com.android.application") version "8.7.3" apply false
-    kotlin("android") version "2.0.20" apply false
-    kotlin("plugin.compose") version "2.0.20" apply false
+    id("com.android.application") version "9.2.1" apply false
+    kotlin("plugin.compose") version "2.3.21" apply false
 }
 
 tasks.register("clean", Delete::class) {

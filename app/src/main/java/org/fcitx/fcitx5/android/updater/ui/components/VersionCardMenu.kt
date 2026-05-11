@@ -20,14 +20,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import org.fcitx.fcitx5.android.updater.R
 import org.fcitx.fcitx5.android.updater.model.RemoteVersionUiState
 import org.fcitx.fcitx5.android.updater.model.VersionUi
 import org.fcitx.fcitx5.android.updater.model.VersionViewModel
+import org.fcitx.fcitx5.android.updater.utils.copyText
 import org.fcitx.fcitx5.android.updater.versionViewModel
 
 @Composable
@@ -111,12 +111,12 @@ fun VersionCardMenuLocal(version: VersionUi.Local, dismissMenu: () -> Unit) {
         Text(stringResource(R.string.export))
     }
     val remoteUrl by remember { mutableStateOf(viewModel.getRemoteUrl(version)) }
+    val clipboard = LocalClipboard.current
     remoteUrl?.let {
-        val clipboardManager = LocalClipboardManager.current
         DropdownMenuItem(
             onClick = {
                 dismissMenu()
-                clipboardManager.setText(AnnotatedString(it))
+                clipboard.copyText(it)
             }
         ) {
             Text(stringResource(R.string.copy_url))
@@ -166,11 +166,11 @@ fun VersionCardMenuRemote(version: VersionUi.Remote, dismissMenu: () -> Unit) {
         RemoteVersionUiState.WaitingRetry -> {
         }
     }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     DropdownMenuItem(
         onClick = {
             dismissMenu()
-            clipboardManager.setText(AnnotatedString(version.downloadUrl))
+            clipboard.copyText(version.downloadUrl)
         }
     ) {
         Text(stringResource(R.string.copy_url))

@@ -1,32 +1,46 @@
-import com.android.build.gradle.internal.dsl.SigningConfig
+import com.android.build.api.dsl.ApkSigningConfig
 import com.android.build.gradle.internal.tasks.CompileArtProfileTask
 import com.android.build.gradle.internal.tasks.ExpandArtProfileWildcardsTask
 import com.android.build.gradle.internal.tasks.MergeArtProfileTask
 import com.android.build.gradle.tasks.PackageApplication
 import org.gradle.api.internal.provider.AbstractProperty
 import org.gradle.api.internal.provider.Providers
-import java.io.ByteArrayOutputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 plugins {
     id("com.android.application")
-    kotlin("android")
     kotlin("plugin.compose")
     kotlin("plugin.parcelize")
 }
 
+val packageName = "org.fcitx.fcitx5.android.updater"
+val staticVersionName = "1.1.0"
+val buildVersionName = exec("git describe --tags --long --always", staticVersionName)
+
+val javaVersion = JavaVersion.VERSION_11
+
+base {
+    archivesName = "$packageName-$buildVersionName"
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget(javaVersion.toString())
+    }
+}
+
 android {
-    namespace = "org.fcitx.fcitx5.android.updater"
-    compileSdk = 35
-    buildToolsVersion = "35.0.0"
+    namespace = packageName
+    compileSdk = 36
+    buildToolsVersion = "35.0.1"
     defaultConfig {
-        applicationId = "org.fcitx.fcitx5.android.updater"
+        applicationId = packageName
         minSdk = 23
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 2
-        versionName = exec("git describe --tags --long --always", "1.1.0")
-        setProperty("archivesBaseName", "$applicationId-$versionName")
+        versionName = buildVersionName
     }
     buildTypes {
         release {
@@ -67,11 +81,8 @@ android {
         generateLocaleConfig = true
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
     }
     buildFeatures {
         buildConfig = true
@@ -99,19 +110,19 @@ tasks.withType<ExpandArtProfileWildcardsTask> { enabled = false }
 tasks.withType<CompileArtProfileTask> { enabled = false }
 
 dependencies {
-    implementation("net.swiftzer.semver:semver:2.0.0")
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation(platform("androidx.compose:compose-bom:2024.11.00"))
+    implementation("net.swiftzer.semver:semver:2.1.0")
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
+    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation(platform("androidx.compose:compose-bom:2026.05.00"))
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.0")
-    implementation("androidx.navigation:navigation-compose:2.8.4")
-    val lifecycleVersion = "2.8.7"
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
+    implementation("androidx.navigation:navigation-compose:2.9.8")
+    val lifecycleVersion = "2.10.0"
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
 }
@@ -126,21 +137,19 @@ configurations {
 }
 
 fun exec(cmd: String, defaultValue: String = ""): String {
-    val stdout = ByteArrayOutputStream()
-    val result = stdout.use {
-        project.exec {
-            commandLine = cmd.split(" ")
-            standardOutput = stdout
-        }
+    val output = providers.exec {
+        commandLine = cmd.split(" ")
     }
-    return if (result.exitValue == 0) stdout.toString().trim() else defaultValue
+    return if (output.result.get().exitValue == 0) {
+        output.standardOutput.asText.get().trim()
+    } else defaultValue
 }
 
 fun env(name: String): String? = System.getenv(name)
 
 private var signKeyTempFile: File? = null
 
-fun NamedDomainObjectContainer<SigningConfig>.createSigningConfigFromEnv(): SigningConfig? {
+fun NamedDomainObjectContainer<out ApkSigningConfig>.createSigningConfigFromEnv(): ApkSigningConfig? {
     var signKeyFile: File? = null
     env("SIGN_KEY_FILE")?.let {
         val file = File(it)
@@ -161,7 +170,7 @@ fun NamedDomainObjectContainer<SigningConfig>.createSigningConfigFromEnv(): Sign
                 file.deleteOnExit()
                 signKeyFile = file
                 signKeyTempFile = file
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 file.delete()
             }
         }
