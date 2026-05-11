@@ -70,7 +70,7 @@ object PackageUtils {
                     Const.updaterProviderName,
                     apkFile
                 ),
-                Const.apkMineType
+                Const.apkMimeType
             )
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
@@ -83,7 +83,7 @@ object PackageUtils {
     fun shareIntent(file: File, outputName: String) =
         Intent(Intent.ACTION_SEND).apply {
             putExtra(Intent.EXTRA_TITLE, outputName)
-            type = Const.apkMineType
+            type = Const.apkMimeType
             putExtra(
                 Intent.EXTRA_STREAM,
                 FileProvider.getUriForFile(

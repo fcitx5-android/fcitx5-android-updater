@@ -134,7 +134,7 @@ class MainActivity : ComponentActivity() {
                 it.value.refreshIfInstalledChanged()
             }
         }
-        exportLauncher = registerForActivityResult(CreateDocument(Const.apkMineType)) {
+        exportLauncher = registerForActivityResult(CreateDocument(Const.apkMimeType)) {
             val uri = it ?: return@registerForActivityResult
             lifecycleScope.launch {
                 contentResolver.openOutputStream(uri)?.use { o ->
