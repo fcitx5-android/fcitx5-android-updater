@@ -16,7 +16,7 @@ plugins {
 }
 
 val packageName = "org.fcitx.fcitx5.android.updater"
-val staticVersionName = "1.1.0"
+val staticVersionName = "1.2.0"
 val buildVersionName = exec("git describe --tags --long --always", staticVersionName)
 
 val javaVersion = JavaVersion.VERSION_11
@@ -34,7 +34,7 @@ kotlin {
 android {
     namespace = packageName
     compileSdk = 36
-    buildToolsVersion = "35.0.1"
+    buildToolsVersion = "36.1.0"
     defaultConfig {
         applicationId = packageName
         minSdk = 23
