@@ -6,11 +6,11 @@ import net.swiftzer.semver.SemVer
 import org.fcitx.fcitx5.android.updater.api.CommonApi
 import org.fcitx.fcitx5.android.updater.api.JenkinsAndroidJob
 import org.fcitx.fcitx5.android.updater.api.JenkinsApi
-import org.fcitx.fcitx5.android.updater.bytesToMiB
-import org.fcitx.fcitx5.android.updater.extractVersionName
-import org.fcitx.fcitx5.android.updater.parallelMap
-import org.fcitx.fcitx5.android.updater.parseVersionNumber
-import org.fcitx.fcitx5.android.updater.selectByABI
+import org.fcitx.fcitx5.android.updater.utils.bytesToMiB
+import org.fcitx.fcitx5.android.updater.utils.extractVersionName
+import org.fcitx.fcitx5.android.updater.utils.parallelMap
+import org.fcitx.fcitx5.android.updater.utils.parseVersionNumber
+import org.fcitx.fcitx5.android.updater.utils.selectByABI
 
 class JenkinsVersionViewModel(private val jenkinsAndroidJob: JenkinsAndroidJob, initialBuildNumbers: List<Int>) :
     VersionViewModel(jenkinsAndroidJob.jobName, jenkinsAndroidJob.pkgName, jenkinsAndroidJob.url) {

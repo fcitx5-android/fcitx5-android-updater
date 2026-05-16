@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import okhttp3.Request
 import org.fcitx.fcitx5.android.updater.Const
 import org.fcitx.fcitx5.android.updater.api.CommonApi
-import org.fcitx.fcitx5.android.updater.await
-import org.fcitx.fcitx5.android.updater.httpClient
+import org.fcitx.fcitx5.android.updater.utils.await
+import org.fcitx.fcitx5.android.updater.utils.httpClient
 import java.io.File
 import java.io.RandomAccessFile
 import java.util.concurrent.atomic.AtomicBoolean

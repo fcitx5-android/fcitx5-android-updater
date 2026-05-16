@@ -11,6 +11,7 @@ class UpdaterApplication : Application() {
     }
 
     private fun migrateOldDownloads() {
+        val externalDir = context.getExternalFilesDir(null) ?: return
         val apks = externalDir.listFiles { _, name -> name.endsWith(".apk") } ?: return
         val appDownloadDir = externalDir.resolve("fcitx5-android")
         apks.forEach {

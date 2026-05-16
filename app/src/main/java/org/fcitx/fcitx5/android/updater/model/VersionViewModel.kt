@@ -18,10 +18,10 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.fcitx.fcitx5.android.updater.PackageUtils
 import org.fcitx.fcitx5.android.updater.UpdaterApplication
-import org.fcitx.fcitx5.android.updater.bytesToMiB
-import org.fcitx.fcitx5.android.updater.externalDir
 import org.fcitx.fcitx5.android.updater.network.DownloadEvent
 import org.fcitx.fcitx5.android.updater.network.DownloadTask
+import org.fcitx.fcitx5.android.updater.utils.appContext
+import org.fcitx.fcitx5.android.updater.utils.bytesToMiB
 import java.io.File
 
 abstract class VersionViewModel(
@@ -62,9 +62,8 @@ abstract class VersionViewModel(
     private val _fileOperation = MutableSharedFlow<FileOperation>()
     val fileOperation = _fileOperation.asSharedFlow()
 
-    private val downloadDir = File(externalDir, name).apply {
-        mkdirs()
-    }
+    private val downloadDir = File(appContext.getExternalFilesDir(null), name)
+        .also { it.mkdirs() }
 
     fun getRemoteUiState(remote: VersionUi.Remote) =
         remoteVersionUiStates.getOrPut(remote) {
