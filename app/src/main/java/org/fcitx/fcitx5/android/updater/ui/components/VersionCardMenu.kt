@@ -32,20 +32,15 @@ import org.fcitx.fcitx5.android.updater.versionViewModel
 
 @Composable
 fun VersionCardMenu(version: VersionUi, modifier: Modifier) {
-    when (version) {
-        is VersionUi.Installed -> {
-            if (!version.isInstalled) return
-            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
+    VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
+        when (version) {
+            is VersionUi.Installed -> {
                 VersionCardMenuInstalled(version, dismissMenu)
             }
-        }
-        is VersionUi.Local -> {
-            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
+            is VersionUi.Local -> {
                 VersionCardMenuLocal(version, dismissMenu)
             }
-        }
-        is VersionUi.Remote -> {
-            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
+            is VersionUi.Remote -> {
                 VersionCardMenuRemote(version, dismissMenu)
             }
         }
