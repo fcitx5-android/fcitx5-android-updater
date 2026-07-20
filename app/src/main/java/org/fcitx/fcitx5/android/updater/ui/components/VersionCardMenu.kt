@@ -1,7 +1,6 @@
 package org.fcitx.fcitx5.android.updater.ui.components
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.ContentAlpha
@@ -31,36 +30,18 @@ import org.fcitx.fcitx5.android.updater.utils.copyText
 import org.fcitx.fcitx5.android.updater.versionViewModel
 
 @Composable
-fun VersionCardMenu(version: VersionUi, modifier: Modifier) {
-    when (version) {
-        is VersionUi.Installed -> {
-            if (!version.isInstalled) return
-            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
-                VersionCardMenuInstalled(version, dismissMenu)
-            }
-        }
-        is VersionUi.Local -> {
-            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
-                VersionCardMenuLocal(version, dismissMenu)
-            }
-        }
-        is VersionUi.Remote -> {
-            VersionCardMenuIcon(modifier = modifier) { dismissMenu ->
-                VersionCardMenuRemote(version, dismissMenu)
-            }
-        }
-    }
-}
-
-@Composable
-fun VersionCardMenuIcon(
+fun VersionCardMenu(
+    version: VersionUi,
     modifier: Modifier,
-    content: @Composable ColumnScope.(dismissMenu: () -> Unit) -> Unit
 ) {
     Box(modifier = modifier) {
         var menuExpanded by remember { mutableStateOf(false) }
         val dismissMenu = { menuExpanded = false }
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
+        var pinnedVersion by remember { mutableStateOf<VersionUi>(version) }
+        IconButton(onClick = {
+            pinnedVersion = version
+            menuExpanded = true
+        }, modifier = Modifier.size(48.dp)) {
             Icon(
                 imageVector = Icons.Filled.MoreVert,
                 tint = MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.medium),
@@ -71,7 +52,19 @@ fun VersionCardMenuIcon(
             expanded = menuExpanded,
             onDismissRequest = dismissMenu,
             modifier = Modifier.defaultMinSize(minWidth = 180.dp),
-            content = { content(dismissMenu) }
+            content = {
+                when (val version = pinnedVersion) {
+                    is VersionUi.Installed -> {
+                        VersionCardMenuInstalled(version, dismissMenu)
+                    }
+                    is VersionUi.Local -> {
+                        VersionCardMenuLocal(version, dismissMenu)
+                    }
+                    is VersionUi.Remote -> {
+                        VersionCardMenuRemote(version, dismissMenu)
+                    }
+                }
+            }
         )
     }
 }
