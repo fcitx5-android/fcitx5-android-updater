@@ -28,6 +28,7 @@ fun VersionCard(version: VersionUi) {
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
         ) {
             val (title, installed, size, menu, action) = createRefs()
+            val notInstalled = version is VersionUi.Installed && !version.isInstalled
             Text(
                 text = version.versionName,
                 style = MaterialTheme.typography.body1,
@@ -61,16 +62,18 @@ fun VersionCard(version: VersionUi) {
                         start.linkTo(parent.start)
                     }
             )
-            VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
-                top.linkTo(parent.top)
-                end.linkTo(parent.end)
-            })
-            VersionCardAction(version, modifier = Modifier.constrainAs(action) {
-                width = Dimension.fillToConstraints
-                top.linkTo(menu.bottom)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-            })
+            if (!notInstalled) {
+                VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
+                    top.linkTo(parent.top)
+                    end.linkTo(parent.end)
+                })
+                VersionCardAction(version, modifier = Modifier.constrainAs(action) {
+                    width = Dimension.fillToConstraints
+                    top.linkTo(menu.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                })
+            }
         }
     }
 }
