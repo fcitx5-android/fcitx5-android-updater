@@ -61,16 +61,18 @@ fun VersionCard(version: VersionUi) {
                         start.linkTo(parent.start)
                     }
             )
-            VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
-                top.linkTo(parent.top)
-                end.linkTo(parent.end)
-            })
-            VersionCardAction(version, modifier = Modifier.constrainAs(action) {
-                width = Dimension.fillToConstraints
-                top.linkTo(menu.bottom)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-            })
+            if (version is VersionUi.Installed && version.isInstalled) {
+                VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
+                    top.linkTo(parent.top)
+                    end.linkTo(parent.end)
+                })
+                VersionCardAction(version, modifier = Modifier.constrainAs(action) {
+                    width = Dimension.fillToConstraints
+                    top.linkTo(menu.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                })
+            }
         }
     }
 }
