@@ -28,7 +28,6 @@ fun VersionCard(version: VersionUi) {
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
         ) {
             val (title, installed, size, menu, action) = createRefs()
-            val notInstalled = version is VersionUi.Installed && !version.isInstalled
             Text(
                 text = version.versionName,
                 style = MaterialTheme.typography.body1,
@@ -62,7 +61,7 @@ fun VersionCard(version: VersionUi) {
                         start.linkTo(parent.start)
                     }
             )
-            if (!notInstalled) {
+            if (version is VersionUi.Installed && version.isInstalled) {
                 VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
                     top.linkTo(parent.top)
                     end.linkTo(parent.end)
