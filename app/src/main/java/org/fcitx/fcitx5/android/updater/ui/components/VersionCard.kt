@@ -61,7 +61,7 @@ fun VersionCard(version: VersionUi) {
                         start.linkTo(parent.start)
                     }
             )
-            if (version is VersionUi.Installed && version.isInstalled) {
+            if (version !is VersionUi.Installed || version.isInstalled) {
                 VersionCardMenu(version, modifier = Modifier.constrainAs(menu) {
                     top.linkTo(parent.top)
                     end.linkTo(parent.end)
